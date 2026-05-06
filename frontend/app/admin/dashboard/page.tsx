@@ -39,37 +39,40 @@ const emptyBrandingForm: BrandingData = {
   whatsappUrl: ""
 };
 
-const shellStyles = {
+const styles = {
   card: {
-    background: "#182235",
-    border: "1px solid rgba(143, 163, 194, 0.14)",
-    borderRadius: "20px",
-    boxShadow: "0 18px 40px rgba(0, 0, 0, 0.18)"
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "16px",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)"
   } as const,
   title: {
-    fontSize: "20px",
-    fontWeight: 800,
-    color: "#f8fbff"
+    fontSize: "18px",
+    fontWeight: 700,
+    color: "#0f172a"
   } as const,
   muted: {
-    color: "#8196b4"
+    color: "#64748b"
   } as const,
   button: {
     border: "none",
-    borderRadius: "12px",
-    padding: "11px 16px",
-    fontWeight: 700,
-    cursor: "pointer"
+    borderRadius: "10px",
+    padding: "10px 16px",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: "14px"
   } as const,
   input: {
     width: "100%",
-    height: "46px",
-    borderRadius: "12px",
-    border: "1px solid rgba(143, 163, 194, 0.18)",
-    background: "#111a2d",
-    color: "#eff6ff",
+    height: "42px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    color: "#0f172a",
     padding: "0 14px",
-    fontFamily: "inherit"
+    fontFamily: "inherit",
+    fontSize: "14px",
+    outline: "none"
   } as const
 };
 
@@ -94,8 +97,8 @@ function SectionHeader({
       }}
     >
       <div>
-        <h3 style={{ ...shellStyles.title, fontSize: "22px" }}>{title}</h3>
-        {subtitle ? <p style={{ ...shellStyles.muted, fontSize: "14px", marginTop: "4px" }}>{subtitle}</p> : null}
+        <h3 style={{ ...styles.title, fontSize: "18px" }}>{title}</h3>
+        {subtitle ? <p style={{ ...styles.muted, fontSize: "13px", marginTop: "4px" }}>{subtitle}</p> : null}
       </div>
       {action}
     </div>
@@ -104,14 +107,14 @@ function SectionHeader({
 
 function getPaymentTone(status: string) {
   if (status === "PAID") {
-    return { background: "rgba(97, 233, 191, 0.12)", color: "#69ebc0" };
+    return { background: "#dcfce7", color: "#166534" };
   }
 
   if (status === "PROCESSING") {
-    return { background: "rgba(255, 200, 87, 0.12)", color: "#ffc857" };
+    return { background: "#fef3c7", color: "#92400e" };
   }
 
-  return { background: "rgba(126, 147, 177, 0.12)", color: "#a9bdd8" };
+  return { background: "#f1f5f9", color: "#475569" };
 }
 
 function formatWibDateTime(value: string) {
@@ -254,130 +257,153 @@ export default function AdminDashboardPage() {
   }
 
   if (loading) {
-    return <div style={{ color: "#cfe0f4", fontWeight: 700 }}>Loading dashboard...</div>;
+    return <div style={{ color: "#64748b", fontWeight: 600, padding: "20px" }}>Loading dashboard...</div>;
   }
 
   if (!data) {
-    return <div style={{ color: "#cfe0f4" }}>Gagal memuat data.</div>;
+    return <div style={{ color: "#64748b", padding: "20px" }}>Gagal memuat data.</div>;
   }
 
   const stats = [
     {
       label: "Total Penghasilan",
       value: formatRupiah(data.totalEarnings),
-      color: "#69ebc0",
-      icon: "$"
+      color: "#059669",
+      bgColor: "#ecfdf5",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm1 17.93V20h-2v-.07A7.96 7.96 0 0 1 4.07 13H4v-2h.07A7.96 7.96 0 0 1 11 4.07V4h2v.07A7.96 7.96 0 0 1 19.93 11H20v2h-.07A7.96 7.96 0 0 1 13 19.93Z" fill="currentColor" />
+        </svg>
+      )
     },
     {
       label: "Daftar Pengguna",
       value: data.users.toLocaleString("id-ID"),
-      color: "#69a8ff",
-      icon: "👥"
+      color: "#2563eb",
+      bgColor: "#eff6ff",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM4 19a5 5 0 0 1 10 0H4Zm11 0a4 4 0 0 1 5-3.87V19h-5Z" fill="currentColor" />
+        </svg>
+      )
     },
     {
       label: "Dokumen Sukses",
       value: data.completed.toLocaleString("id-ID"),
-      color: "#ffd66b",
-      icon: "✓"
+      color: "#0891b2",
+      bgColor: "#ecfeff",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z" fill="currentColor" />
+        </svg>
+      )
     },
     {
       label: "Dokumen Gagal",
       value: data.failed.toLocaleString("id-ID"),
-      color: "#9b8cff",
-      icon: "!"
+      color: "#dc2626",
+      bgColor: "#fef2f2",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm1 15h-2v-2h2v2Zm0-4h-2V7h2v6Z" fill="currentColor" />
+        </svg>
+      )
     },
     {
       label: "Total Pengecekan",
       value: data.requests.toLocaleString("id-ID"),
-      color: "#ff8c69",
-      icon: "≣"
+      color: "#7c3aed",
+      bgColor: "#f5f3ff",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2Zm-7 14H7v-2h5v2Zm5-4H7v-2h10v2Zm0-4H7V7h10v2Z" fill="currentColor" />
+        </svg>
+      )
     }
   ];
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
+    <div style={{ display: "grid", gap: "20px" }}>
       <section
         style={{
-          ...shellStyles.card,
-          padding: isMobile ? "22px 18px" : "24px 26px",
+          ...styles.card,
+          padding: isMobile ? "20px 16px" : "20px 24px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: isMobile ? "flex-start" : "center",
-          gap: "18px",
-          flexDirection: isMobile ? "column" : "row",
-          background:
-            "radial-gradient(circle at right top, rgba(105, 235, 192, 0.12), transparent 26%), #182235"
+          gap: "16px",
+          flexDirection: isMobile ? "column" : "row"
         }}
       >
         <div>
-          <h1 style={{ fontSize: isMobile ? "28px" : "32px", fontWeight: 900, color: "#f8fbff", lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: isMobile ? "24px" : "26px", fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>
             Dashboard Admin
           </h1>
-          <p style={{ color: "#8ea3c2", marginTop: "8px", fontSize: "15px" }}>
+          <p style={{ color: "#64748b", marginTop: "6px", fontSize: "14px" }}>
             Kelola performa platform, paket harga, voucher, dan identitas brand dari satu panel.
           </p>
         </div>
         <div
           style={{
-            minWidth: isMobile ? "100%" : "220px",
-            padding: "14px 16px",
-            borderRadius: "16px",
-            background: "rgba(255, 255, 255, 0.04)",
-            border: "1px solid rgba(143, 163, 194, 0.12)"
+            minWidth: isMobile ? "100%" : "200px",
+            padding: "12px 16px",
+            borderRadius: "12px",
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0"
           }}
         >
-          <div style={{ color: "#7f93b1", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <div style={{ color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
             Waktu Server
           </div>
-          <div style={{ color: "#f7fbff", fontSize: "24px", fontWeight: 800, marginTop: "6px" }}>{serverTime}</div>
+          <div style={{ color: "#0f172a", fontSize: "22px", fontWeight: 700, marginTop: "4px", fontVariantNumeric: "tabular-nums" }}>{serverTime}</div>
         </div>
       </section>
 
       {message ? (
         <div
           style={{
-            padding: "14px 16px",
-            borderRadius: "16px",
-            background: "rgba(105, 235, 192, 0.09)",
-            border: "1px solid rgba(105, 235, 192, 0.16)",
-            color: "#9deed3",
-            fontWeight: 700
+            padding: "12px 16px",
+            borderRadius: "12px",
+            background: message.includes("berhasil") ? "#dcfce7" : "#fef2f2",
+            border: message.includes("berhasil") ? "1px solid #bbf7d0" : "1px solid #fecaca",
+            color: message.includes("berhasil") ? "#166534" : "#991b1b",
+            fontWeight: 600,
+            fontSize: "14px"
           }}
         >
           {message}
         </div>
       ) : null}
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+      <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px" }}>
         {stats.map((stat) => (
-          <article key={stat.label} style={{ ...shellStyles.card, padding: "22px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "14px", alignItems: "flex-start" }}>
-              <div>
+          <article key={stat.label} style={{ ...styles.card, padding: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
+              <div style={{ flex: 1 }}>
                 <div
                   style={{
-                    color: "#6f86a8",
+                    color: "#64748b",
+                    fontSize: "12px",
+                    fontWeight: 600,
                     textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontSize: "13px",
-                    fontWeight: 700
+                    letterSpacing: "0.05em"
                   }}
                 >
                   {stat.label}
                 </div>
-                <div style={{ color: "#f8fbff", fontSize: "22px", fontWeight: 900, marginTop: "16px" }}>{stat.value}</div>
+                <div style={{ color: "#0f172a", fontSize: "22px", fontWeight: 800, marginTop: "10px" }}>{stat.value}</div>
               </div>
               <div
                 style={{
                   width: "42px",
                   height: "42px",
                   borderRadius: "12px",
-                  background: `${stat.color}18`,
+                  background: stat.bgColor,
                   color: stat.color,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "20px",
-                  fontWeight: 800
+                  flexShrink: 0
                 }}
               >
                 {stat.icon}
@@ -387,7 +413,7 @@ export default function AdminDashboardPage() {
         ))}
       </section>
 
-      <section style={{ ...shellStyles.card, padding: isMobile ? "18px 14px" : "22px" }}>
+      <section style={{ ...styles.card, padding: isMobile ? "16px" : "20px" }}>
         <SectionHeader
           title="Pesanan Terbaru"
           subtitle="Snapshot cepat order terbaru yang masuk ke sistem."
@@ -398,12 +424,14 @@ export default function AdminDashboardPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                minHeight: "42px",
+                minHeight: "38px",
                 padding: "0 16px",
-                borderRadius: "12px",
-                background: "#69ebc0",
-                color: "#0d2230",
-                fontWeight: 800
+                borderRadius: "10px",
+                background: "#2563eb",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: "13px",
+                textDecoration: "none"
               }}
             >
               Lihat Semua
@@ -412,7 +440,7 @@ export default function AdminDashboardPage() {
         />
 
         {isMobile ? (
-          <div style={{ display: "grid", gap: "12px" }}>
+          <div style={{ display: "grid", gap: "10px" }}>
             {data.recentRequests.map((req) => {
               const tone = getPaymentTone(req.paymentStatus);
 
@@ -420,27 +448,27 @@ export default function AdminDashboardPage() {
                 <article
                   key={req.id}
                   style={{
-                    borderRadius: "16px",
-                    background: "#111a2d",
-                    border: "1px solid rgba(143, 163, 194, 0.12)",
+                    borderRadius: "12px",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
                     padding: "14px"
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "flex-start", marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "flex-start", marginBottom: "10px" }}>
                     <div>
-                      <div style={{ color: "#8fa6c7", fontWeight: 700, fontSize: "13px" }}>#{req.id.slice(-4).toUpperCase()}</div>
-                      <div style={{ color: "#f8fbff", fontWeight: 800, fontSize: "16px", marginTop: "4px", lineHeight: 1.3 }}>{req.user.fullName}</div>
+                      <div style={{ color: "#94a3b8", fontWeight: 600, fontSize: "12px" }}>#{req.id.slice(-4).toUpperCase()}</div>
+                      <div style={{ color: "#0f172a", fontWeight: 700, fontSize: "15px", marginTop: "2px", lineHeight: 1.3 }}>{req.user.fullName}</div>
                     </div>
                     <span
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        minHeight: "28px",
-                        padding: "0 10px",
+                        minHeight: "26px",
+                        padding: "0 8px",
                         borderRadius: "999px",
                         background: tone.background,
                         color: tone.color,
-                        fontWeight: 800,
+                        fontWeight: 600,
                         fontSize: "11px",
                         whiteSpace: "nowrap"
                       }}
@@ -449,19 +477,19 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
 
-                  <div style={{ display: "grid", gap: "10px" }}>
+                  <div style={{ display: "grid", gap: "8px" }}>
                     <div>
-                      <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>Produk</div>
-                      <div style={{ color: "#c8d7ea", fontWeight: 600 }}>{req.package.name}</div>
+                      <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Produk</div>
+                      <div style={{ color: "#334155", fontWeight: 500, fontSize: "13px" }}>{req.package.name}</div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                       <div>
-                        <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>Waktu</div>
-                        <div style={{ color: "#c8d7ea", fontWeight: 600, fontSize: "13px", lineHeight: 1.4 }}>{formatWibDateTime(req.createdAt)}</div>
+                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Waktu</div>
+                        <div style={{ color: "#334155", fontWeight: 500, fontSize: "12px", lineHeight: 1.4 }}>{formatWibDateTime(req.createdAt)}</div>
                       </div>
                       <div>
-                        <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>Total</div>
-                        <div style={{ color: "#f8fbff", fontWeight: 800 }}>{formatRupiah(req.finalAmount || 0)}</div>
+                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Total</div>
+                        <div style={{ color: "#0f172a", fontWeight: 700, fontSize: "13px" }}>{formatRupiah(req.finalAmount || 0)}</div>
                       </div>
                     </div>
                   </div>
@@ -473,17 +501,18 @@ export default function AdminDashboardPage() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "700px" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(143, 163, 194, 0.14)" }}>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
                   {["ID", "Pelanggan", "Produk", "Waktu Pengecekan", "Total", "Status"].map((header) => (
                     <th
                       key={header}
                       style={{
                         textAlign: "left",
-                        color: "#6f86a8",
+                        color: "#94a3b8",
                         fontSize: "12px",
                         textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                        padding: "0 16px 14px 16px"
+                        letterSpacing: "0.05em",
+                        padding: "0 16px 12px 16px",
+                        fontWeight: 600
                       }}
                     >
                       {header}
@@ -495,23 +524,23 @@ export default function AdminDashboardPage() {
                 {data.recentRequests.map((req) => {
                   const tone = getPaymentTone(req.paymentStatus);
                   return (
-                    <tr key={req.id} style={{ borderBottom: "1px solid rgba(143, 163, 194, 0.08)" }}>
-                      <td style={{ padding: "16px", color: "#8fa6c7", fontWeight: 600 }}>#{req.id.slice(-4).toUpperCase()}</td>
-                      <td style={{ padding: "16px", color: "#f8fbff", fontWeight: 700 }}>{req.user.fullName}</td>
-                      <td style={{ padding: "16px", color: "#a9bdd8" }}>{req.package.name}</td>
-                      <td style={{ padding: "16px", color: "#c8d7ea", fontWeight: 600 }}>{formatWibDateTime(req.createdAt)}</td>
-                      <td style={{ padding: "16px", color: "#f8fbff", fontWeight: 800 }}>{formatRupiah(req.finalAmount || 0)}</td>
-                      <td style={{ padding: "16px" }}>
+                    <tr key={req.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 500, fontSize: "13px" }}>#{req.id.slice(-4).toUpperCase()}</td>
+                      <td style={{ padding: "14px 16px", color: "#0f172a", fontWeight: 600, fontSize: "14px" }}>{req.user.fullName}</td>
+                      <td style={{ padding: "14px 16px", color: "#475569", fontSize: "14px" }}>{req.package.name}</td>
+                      <td style={{ padding: "14px 16px", color: "#475569", fontWeight: 500, fontSize: "13px" }}>{formatWibDateTime(req.createdAt)}</td>
+                      <td style={{ padding: "14px 16px", color: "#0f172a", fontWeight: 700, fontSize: "14px" }}>{formatRupiah(req.finalAmount || 0)}</td>
+                      <td style={{ padding: "14px 16px" }}>
                         <span
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            minHeight: "30px",
-                            padding: "0 12px",
+                            minHeight: "28px",
+                            padding: "0 10px",
                             borderRadius: "999px",
                             background: tone.background,
                             color: tone.color,
-                            fontWeight: 800,
+                            fontWeight: 600,
                             fontSize: "12px"
                           }}
                         >
@@ -528,7 +557,7 @@ export default function AdminDashboardPage() {
       </section>
 
       <section>
-        <article style={{ ...shellStyles.card, padding: isMobile ? "18px 14px" : "22px" }}>
+        <article style={{ ...styles.card, padding: isMobile ? "16px" : "20px" }}>
           <SectionHeader title="Branding & Sosial" subtitle="Kelola identitas brand yang dipakai seluruh frontend." />
 
           <form
@@ -540,93 +569,94 @@ export default function AdminDashboardPage() {
               gap: "14px"
             }}
           >
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Nama Brand
               <input
                 value={brandingForm.brandName}
                 onChange={(e) => setBrandingForm((prev) => ({ ...prev, brandName: e.target.value }))}
-                style={shellStyles.input}
+                style={styles.input}
               />
             </label>
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Link Instagram
               <input
                 value={brandingForm.instagramUrl || ""}
                 onChange={(e) => setBrandingForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
                 placeholder="https://instagram.com/..."
-                style={shellStyles.input}
+                style={styles.input}
               />
             </label>
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Link TikTok
               <input
                 value={brandingForm.tiktokUrl || ""}
                 onChange={(e) => setBrandingForm((prev) => ({ ...prev, tiktokUrl: e.target.value }))}
                 placeholder="https://www.tiktok.com/..."
-                style={shellStyles.input}
+                style={styles.input}
               />
             </label>
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Link WhatsApp
               <input
                 value={brandingForm.whatsappUrl || ""}
                 onChange={(e) => setBrandingForm((prev) => ({ ...prev, whatsappUrl: e.target.value }))}
                 placeholder="https://wa.me/628..."
-                style={shellStyles.input}
+                style={styles.input}
               />
             </label>
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Upload Logo Lokal
               <input
                 type="file"
                 accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
                 onChange={(e) => setBrandingLogoFile(e.target.files?.[0] || null)}
                 style={{
-                  ...shellStyles.input,
+                  ...styles.input,
                   display: "flex",
                   alignItems: "center",
-                  padding: "10px 14px"
+                  padding: "8px 14px"
                 }}
               />
             </label>
             <div
               style={{
-                borderRadius: "16px",
-                border: "1px solid rgba(143, 163, 194, 0.14)",
-                background: "#111a2d",
-                minHeight: "112px",
-                padding: "16px",
+                borderRadius: "12px",
+                border: "1px solid #e2e8f0",
+                background: "#f8fafc",
+                minHeight: "100px",
+                padding: "14px",
                 display: "flex",
                 alignItems: "center",
-                gap: "14px"
+                gap: "12px"
               }}
             >
               {brandingLogoPreviewUrl || brandingForm.logoUrl ? (
                 <img
                   src={brandingLogoPreviewUrl || brandingForm.logoUrl}
                   alt={brandingForm.brandName}
-                  style={{ width: "56px", height: "56px", objectFit: "contain", flexShrink: 0 }}
+                  style={{ width: "48px", height: "48px", objectFit: "contain", flexShrink: 0 }}
                 />
               ) : (
                 <div
                   style={{
-                    width: "56px",
-                    height: "56px",
-                    borderRadius: "16px",
-                    background: "rgba(105, 235, 192, 0.12)",
-                    color: "#69ebc0",
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "12px",
+                    background: "#eff6ff",
+                    color: "#2563eb",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontWeight: 800
+                    fontWeight: 700,
+                    fontSize: "11px"
                   }}
                 >
                   LOGO
                 </div>
               )}
               <div>
-                <div style={{ color: "#f8fbff", fontWeight: 800, fontSize: "18px" }}>{brandingForm.brandName || "Verscan"}</div>
-                <div style={{ color: "#7f93b1", fontSize: "13px", marginTop: "4px", lineHeight: 1.5 }}>
+                <div style={{ color: "#0f172a", fontWeight: 700, fontSize: "16px" }}>{brandingForm.brandName || "Verscan"}</div>
+                <div style={{ color: "#94a3b8", fontSize: "12px", marginTop: "2px", lineHeight: 1.5 }}>
                   {brandingLogoFile
                     ? brandingLogoFile.name
                     : brandingForm.logoUrl
@@ -637,8 +667,8 @@ export default function AdminDashboardPage() {
             </div>
           </form>
 
-          <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-            <div style={{ color: "#7f93b1", fontSize: "13px" }}>
+          <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ color: "#94a3b8", fontSize: "12px" }}>
               Format didukung: PNG, JPG, JPEG, WEBP, dan SVG.
             </div>
             <button
@@ -646,9 +676,9 @@ export default function AdminDashboardPage() {
               form="branding-form"
               disabled={saving}
               style={{
-                ...shellStyles.button,
-                background: "#69ebc0",
-                color: "#0b1d28",
+                ...styles.button,
+                background: "#2563eb",
+                color: "#ffffff",
                 opacity: saving ? 0.7 : 1
               }}
             >

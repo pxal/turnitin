@@ -36,11 +36,11 @@ export default function AdminGatewayPage() {
     apiKeyMasked: "",
     secretKeyMasked: ""
   });
-  const surface = "#182235";
-  const innerSurface = "#111a2d";
-  const borderColor = "rgba(143, 163, 194, 0.14)";
-  const textPrimary = "#f8fbff";
-  const textMuted = "#8ea3c2";
+  const surface = "#ffffff";
+  const innerSurface = "#f8fafc";
+  const borderColor = "#e2e8f0";
+  const textPrimary = "#0f172a";
+  const textMuted = "#64748b";
 
   function normalizeTemplateUrl(value: string, target: "backend" | "frontend") {
     if (!value) {
@@ -154,174 +154,148 @@ export default function AdminGatewayPage() {
   }
 
   if (loading) {
-    return <div>Memuat konfigurasi gateway...</div>;
+    return <div style={{ color: textMuted, fontWeight: 600 }}>Memuat konfigurasi gateway...</div>;
   }
 
   return (
     <div>
-      <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: 800, color: textPrimary }}>Payment Gateway</h1>
-        <p style={{ color: textMuted }}>Kelola konfigurasi dan pantau koneksi ke payment gateway.</p>
+      <div style={{ marginBottom: "24px" }}>
+        <h1 style={{ fontSize: "24px", fontWeight: 800, color: textPrimary }}>Payment Gateway</h1>
+        <p style={{ color: textMuted, fontSize: "14px", marginTop: "4px" }}>Kelola konfigurasi dan pantau koneksi ke payment gateway.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr", gap: "32px" }}>
-        {/* Active Provider */}
-        <form
-          onSubmit={handleSave}
-          style={{ background: surface, borderRadius: "24px", border: `1px solid ${borderColor}`, padding: "32px" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px", gap: "16px", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: innerSurface, border: `1px solid ${borderColor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>💳</div>
-              <div>
-                <h3 style={{ fontSize: "18px", fontWeight: 800, color: textPrimary }}>{providerName}</h3>
-                <span style={{ fontSize: "12px", color: meta.hasApiKey && meta.hasSecretKey ? "#69ebc0" : textMuted, fontWeight: 700 }}>
-                  ● {meta.hasApiKey && meta.hasSecretKey ? "SIAP DIGUNAKAN" : "PERLU KONFIGURASI"}
-                </span>
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{ padding: "10px 18px", borderRadius: "10px", background: "#69ebc0", color: "#0b1d28", border: "none", fontSize: "13px", fontWeight: 800, cursor: saving ? "not-allowed" : "pointer" }}
-            >
-              {saving ? "Menyimpan..." : "Simpan Konfigurasi"}
-            </button>
-          </div>
-
-          {message ? (
-            <div style={{ marginBottom: "20px", padding: "14px 16px", borderRadius: "12px", background: "rgba(105, 235, 192, 0.09)", color: "#9deed3", border: "1px solid rgba(105, 235, 192, 0.16)", fontWeight: 700 }}>
-              {message}
-            </div>
-          ) : null}
-
-          {error ? (
-            <div style={{ marginBottom: "20px", padding: "14px 16px", borderRadius: "12px", background: "rgba(255, 110, 106, 0.1)", color: "#ff9b9b", border: "1px solid rgba(255, 110, 106, 0.14)", fontWeight: 700 }}>
-              {error}
-            </div>
-          ) : null}
-
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: "20px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>PROVIDER</span>
-              <select
-                value={form.provider}
-                onChange={(e) => setForm((prev) => ({
-                  ...prev,
-                  provider: e.target.value,
-                  baseUrl: e.target.value === "versan" && !prev.baseUrl ? "https://gateway.verscan.net" : prev.baseUrl,
-                  paymentCode: e.target.value === "versan" ? "QRIS" : prev.paymentCode
-                }))}
-                style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontWeight: 700 }}
-              >
-                <option value="sekalipay">Sekalipay</option>
-                <option value="versan">Versan Gateway</option>
-              </select>
-            </label>
-            {[
-              { label: "BASE URL", key: "baseUrl", placeholder: form.provider === "versan" ? "https://gateway.verscan.net" : "https://sekalipay.com/api/v1/gateway" },
-              { label: form.provider === "versan" ? "STORE ID / CATATAN" : "MERCHANT CODE", key: "merchantCode", placeholder: form.provider === "versan" ? "Opsional, mis. store utama" : "MCH-XXXX" },
-              { label: "API KEY", key: "apiKey", placeholder: "Masukkan API key gateway" },
-              { label: form.provider === "versan" ? "WEBHOOK SECRET" : "SECRET KEY", key: "secretKey", placeholder: form.provider === "versan" ? "Masukkan webhook secret gateway" : "Masukkan secret key gateway" },
-              { label: "PAYMENT CODE", key: "paymentCode", placeholder: "QRIS" }
-            ].filter((field) => form.provider !== "versan" || field.key !== "paymentCode").map((field) => (
-              <label key={field.key} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <span style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>{field.label}</span>
-                <input
-                  type={field.key.toLowerCase().includes("secret") ? "password" : "text"}
-                  value={form[field.key as keyof typeof form] as string}
-                  onChange={(e) => setForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                  placeholder={
-                    field.key === "apiKey"
-                      ? meta.hasApiKey
-                        ? "Kosongkan jika tidak ingin mengganti API key"
-                        : field.placeholder
-                      : field.key === "secretKey"
-                        ? meta.hasSecretKey
-                          ? "Kosongkan jika tidak ingin mengganti secret key"
-                          : field.placeholder
-                        : field.placeholder
-                  }
-                  style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: field.key === "apiKey" || field.key === "secretKey" ? "monospace" : "inherit" }}
-                />
-                {field.key === "apiKey" && meta.hasApiKey ? (
-                  <span style={{ fontSize: "12px", color: textMuted }}>
-                    API key tersimpan di server: {meta.apiKeyMasked}
-                  </span>
-                ) : null}
-                {field.key === "secretKey" && meta.hasSecretKey ? (
-                  <span style={{ fontSize: "12px", color: textMuted }}>
-                    Secret key tersimpan di server: {meta.secretKeyMasked}
-                  </span>
-                ) : null}
-              </label>
-            ))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>CALLBACK URL TEMPLATE</span>
-              <input value={templates.callbackUrlTemplate} readOnly style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: `1px solid ${borderColor}`, fontSize: "14px", fontFamily: "monospace", background: innerSurface, color: "#c8d7ea" }} />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>RETURN URL TEMPLATE</span>
-              <input value={templates.returnUrlTemplate} readOnly style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: `1px solid ${borderColor}`, fontSize: "14px", fontFamily: "monospace", background: innerSurface, color: "#c8d7ea" }} />
-            </label>
-          </div>
-
-          <div style={{ display: "flex", gap: "24px", marginTop: "24px", flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "10px", fontWeight: 600, color: "#dce7f5" }}>
-              <input
-                type="checkbox"
-                checked={form.useHmac}
-                onChange={(e) => setForm((prev) => ({ ...prev, useHmac: e.target.checked }))}
-              />
-              Aktifkan Enhanced HMAC mode (`X-Timestamp`)
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "10px", fontWeight: 600, color: "#dce7f5" }}>
-              <input
-                type="checkbox"
-                checked={form.mockPayment}
-                onChange={(e) => setForm((prev) => ({ ...prev, mockPayment: e.target.checked }))}
-              />
-              Gunakan mock payment mode
-            </label>
-          </div>
-
-          <div style={{ marginTop: "16px", padding: "14px 16px", borderRadius: "12px", background: innerSurface, border: `1px solid ${borderColor}`, color: "#c8d7ea", fontSize: "13px", lineHeight: 1.6 }}>
-            {form.provider === "versan"
-              ? "Versan Gateway memakai Authorization Bearer API key untuk membuat/cek pembayaran dan X-Gateway-Signature untuk callback pembayaran."
-              : form.useHmac
-              ? "Gunakan mode ini hanya bila akun merchant Anda memang memakai Enhanced HMAC dengan header X-Timestamp. Uji live terakhir menunjukkan akun ini tidak menerima mode tersebut."
-              : "Mode aktif yang cocok untuk akun ini adalah IP whitelist + raw body signature. Disarankan biarkan Enhanced HMAC tetap nonaktif."}
-          </div>
-        </form>
-
-        {/* Info Card */}
-        <div style={{ background: surface, borderRadius: "24px", padding: "32px", color: "white", border: `1px solid ${borderColor}` }}>
-          <h3 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "16px" }}>Tips Keamanan</h3>
-          <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, marginBottom: "24px" }}>
-            Pastikan Secret Key Anda tidak pernah dibagikan kepada siapapun. Setelah menyimpan konfigurasi baru, order pembayaran berikutnya akan memakai nilai terbaru dari dashboard ini.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <span style={{ color: form.useHmac ? "#38bdf8" : "#64748b" }}>✔</span>
-              <span style={{ fontSize: "14px", color: "#cbd5e1" }}>
-                {form.useHmac ? "Enhanced HMAC mode aktif" : "IP whitelist + raw body signature aktif"}
-              </span>
-            </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <span style={{ color: form.mockPayment ? "#64748b" : "#38bdf8" }}>✔</span>
-              <span style={{ fontSize: "14px", color: "#cbd5e1" }}>
-                {form.mockPayment ? "Mock payment aktif untuk pengujian internal" : "Live payment mode aktif"}
-              </span>
-            </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <span style={{ color: meta.hasApiKey && meta.hasSecretKey ? "#69ebc0" : "#64748b" }}>✔</span>
-              <span style={{ fontSize: "14px", color: "#cbd5e1" }}>
-                {meta.hasApiKey && meta.hasSecretKey ? "Secret gateway tersimpan aman di server" : "Secret gateway belum lengkap"}
-              </span>
-            </div>
-          </div>
+      {message ? (
+        <div style={{ marginBottom: "16px", padding: "12px 16px", borderRadius: "12px", background: "#dcfce7", border: "1px solid #bbf7d0", color: "#166534", fontWeight: 600, fontSize: "14px" }}>
+          {message}
         </div>
-      </div>
+      ) : null}
+
+      {error ? (
+        <div style={{ marginBottom: "16px", padding: "12px 16px", borderRadius: "12px", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", fontWeight: 600, fontSize: "14px" }}>
+          {error}
+        </div>
+      ) : null}
+
+      <form
+        onSubmit={handleSave}
+        style={{
+          background: surface,
+          borderRadius: "16px",
+          border: `1px solid ${borderColor}`,
+          padding: isMobile ? "20px" : "28px",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)"
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "24px", flexWrap: "wrap" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: textPrimary }}>{providerName}</h2>
+            <p style={{ margin: "4px 0 0", color: textMuted, fontSize: "13px" }}>Konfigurasi koneksi ke {providerName}.</p>
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            style={{ padding: "10px 18px", borderRadius: "10px", background: "#2563eb", color: "#ffffff", border: "none", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}
+          >
+            {saving ? "Menyimpan..." : "Simpan Gateway"}
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "16px" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>BASE URL</span>
+            <input
+              type="text"
+              value={form.baseUrl}
+              onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
+              placeholder="https://api.sekalipay.com"
+              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: "monospace" }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>MERCHANT CODE</span>
+            <input
+              type="text"
+              value={form.merchantCode}
+              onChange={(e) => setForm((prev) => ({ ...prev, merchantCode: e.target.value }))}
+              placeholder="Merchant code dari provider"
+              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: "monospace" }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>API KEY</span>
+            <input
+              type="password"
+              value={form.apiKey}
+              onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
+              placeholder={meta.hasApiKey ? "Kosongkan jika tidak ingin mengganti" : "Masukkan API key"}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: "monospace" }}
+            />
+            <span style={{ fontSize: "12px", color: textMuted }}>
+              {meta.hasApiKey ? `Tersimpan: ${meta.apiKeyMasked}` : "Belum ada API key tersimpan."}
+            </span>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>SECRET KEY</span>
+            <input
+              type="password"
+              value={form.secretKey}
+              onChange={(e) => setForm((prev) => ({ ...prev, secretKey: e.target.value }))}
+              placeholder={meta.hasSecretKey ? "Kosongkan jika tidak ingin mengganti" : "Masukkan secret key"}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: "monospace" }}
+            />
+            <span style={{ fontSize: "12px", color: textMuted }}>
+              {meta.hasSecretKey ? `Tersimpan: ${meta.secretKeyMasked}` : "Belum ada secret key tersimpan."}
+            </span>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>PAYMENT CODE</span>
+            <input
+              type="text"
+              value={form.paymentCode}
+              onChange={(e) => setForm((prev) => ({ ...prev, paymentCode: e.target.value }))}
+              placeholder="QRIS"
+              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px" }}
+            />
+          </label>
+        </div>
+
+        <div style={{ display: "flex", gap: "24px", marginTop: "20px", flexWrap: "wrap" }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: 600, color: "#334155", fontSize: "14px" }}>
+            <input
+              type="checkbox"
+              checked={form.useHmac}
+              onChange={(e) => setForm((prev) => ({ ...prev, useHmac: e.target.checked }))}
+            />
+            Gunakan HMAC
+          </label>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: 600, color: "#334155", fontSize: "14px" }}>
+            <input
+              type="checkbox"
+              checked={form.mockPayment}
+              onChange={(e) => setForm((prev) => ({ ...prev, mockPayment: e.target.checked }))}
+            />
+            Mock Payment (Testing)
+          </label>
+        </div>
+
+        {(templates.callbackUrlTemplate || templates.returnUrlTemplate) ? (
+          <div style={{ marginTop: "20px", padding: "16px", borderRadius: "12px", background: innerSurface, border: `1px solid ${borderColor}` }}>
+            <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600, marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>URL Templates</div>
+            {templates.callbackUrlTemplate ? (
+              <div style={{ marginBottom: "8px" }}>
+                <span style={{ fontSize: "12px", color: textMuted }}>Callback: </span>
+                <span style={{ fontSize: "13px", color: "#2563eb", fontFamily: "monospace", wordBreak: "break-all" }}>{templates.callbackUrlTemplate}</span>
+              </div>
+            ) : null}
+            {templates.returnUrlTemplate ? (
+              <div>
+                <span style={{ fontSize: "12px", color: textMuted }}>Return: </span>
+                <span style={{ fontSize: "13px", color: "#2563eb", fontFamily: "monospace", wordBreak: "break-all" }}>{templates.returnUrlTemplate}</span>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </form>
     </div>
   );
 }

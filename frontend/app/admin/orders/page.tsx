@@ -67,11 +67,11 @@ export default function AdminOrdersPage() {
   const [retryingOrderId, setRetryingOrderId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalItems: 0, totalPages: 1 });
-  const surface = "#182235";
-  const innerSurface = "#111a2d";
-  const borderColor = "rgba(143, 163, 194, 0.14)";
-  const textPrimary = "#f8fbff";
-  const textMuted = "#8ea3c2";
+  const surface = "#ffffff";
+  const innerSurface = "#f8fafc";
+  const borderColor = "#e2e8f0";
+  const textPrimary = "#0f172a";
+  const textMuted = "#64748b";
 
   function canRetryOrder(order: OrderItem) {
     return order.paymentStatus === "PAID" && (order.checkStatus === "PAID" || order.checkStatus === "FAILED");
@@ -195,7 +195,7 @@ export default function AdminOrdersPage() {
       >
         {selectedOrder ? (
           <div style={{ display: "grid", gap: isMobile ? "14px" : "18px", minWidth: 0 }}>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "16px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
               {[
                 ["Invoice", selectedOrder.payments[0]?.providerRef || "-"],
                 ["Public ID", selectedOrder.publicId],
@@ -204,43 +204,43 @@ export default function AdminOrdersPage() {
                 ["Dokumen", selectedOrder.originalName],
                 ["Paket", selectedOrder.package.name]
               ].map(([label, value]) => (
-                <div key={label} style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: isMobile ? "14px" : "16px", padding: isMobile ? "12px 14px" : "14px 16px", minWidth: 0 }}>
-                  <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.7px", color: textMuted, textTransform: "uppercase", marginBottom: "6px" }}>{label}</div>
-                  <div style={{ fontSize: "14px", lineHeight: 1.6, color: textPrimary, fontWeight: 700, overflowWrap: "anywhere" }}>{value}</div>
+                <div key={label} style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "12px 14px", minWidth: 0 }}>
+                  <div style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", color: textMuted, textTransform: "uppercase", marginBottom: "4px" }}>{label}</div>
+                  <div style={{ fontSize: "14px", lineHeight: 1.6, color: textPrimary, fontWeight: 600, overflowWrap: "anywhere" }}>{value}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: "16px" }}>
-              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: isMobile ? "14px" : "16px", padding: isMobile ? "14px" : "16px", minWidth: 0 }}>
-                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 700, marginBottom: "6px" }}>Pembayaran</div>
-                <div style={{ fontSize: "18px", fontWeight: 900, color: "#69ebc0", overflowWrap: "anywhere" }}>{selectedOrder.paymentStatus}</div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: "14px" }}>
+              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "14px", minWidth: 0 }}>
+                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600, marginBottom: "4px" }}>Pembayaran</div>
+                <div style={{ fontSize: "18px", fontWeight: 800, color: "#059669", overflowWrap: "anywhere" }}>{selectedOrder.paymentStatus}</div>
               </div>
-              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: isMobile ? "14px" : "16px", padding: isMobile ? "14px" : "16px", minWidth: 0 }}>
-                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 700, marginBottom: "6px" }}>Status Cek</div>
-                <div style={{ fontSize: "18px", fontWeight: 900, color: textPrimary, overflowWrap: "anywhere" }}>{selectedOrder.checkStatus}</div>
+              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "14px", minWidth: 0 }}>
+                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600, marginBottom: "4px" }}>Status Cek</div>
+                <div style={{ fontSize: "18px", fontWeight: 800, color: textPrimary, overflowWrap: "anywhere" }}>{selectedOrder.checkStatus}</div>
               </div>
-              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: isMobile ? "14px" : "16px", padding: isMobile ? "14px" : "16px", minWidth: 0 }}>
-                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 700, marginBottom: "6px" }}>Nominal Final</div>
-                <div style={{ fontSize: "18px", fontWeight: 900, color: "#69a8ff", overflowWrap: "anywhere" }}>{formatRupiah(selectedOrder.finalAmount || selectedOrder.package.price)}</div>
+              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "14px", minWidth: 0 }}>
+                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600, marginBottom: "4px" }}>Nominal Final</div>
+                <div style={{ fontSize: "18px", fontWeight: 800, color: "#2563eb", overflowWrap: "anywhere" }}>{formatRupiah(selectedOrder.finalAmount || selectedOrder.package.price)}</div>
               </div>
             </div>
 
-            <div style={{ border: `1px solid ${borderColor}`, background: innerSurface, borderRadius: isMobile ? "14px" : "18px", padding: isMobile ? "14px" : "18px", minWidth: 0 }}>
-              <div style={{ fontSize: "13px", fontWeight: 800, color: textMuted, marginBottom: "10px" }}>Catatan Hasil</div>
-              <div style={{ color: "#d7e4f3", lineHeight: 1.7, fontSize: "14px" }}>
+            <div style={{ border: `1px solid ${borderColor}`, background: innerSurface, borderRadius: "12px", padding: "14px", minWidth: 0 }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: textMuted, marginBottom: "8px" }}>Catatan Hasil</div>
+              <div style={{ color: "#334155", lineHeight: 1.7, fontSize: "14px" }}>
                 {selectedOrder.resultSummary || "Belum ada ringkasan hasil. Order mungkin masih menunggu pembayaran atau proses pengecekan."}
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" }}>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" }}>
               <button
                 type="button"
                 onClick={async () => {
                   await navigator.clipboard.writeText(selectedOrder.publicId);
                   setNotice(`Public ID ${selectedOrder.publicId} berhasil disalin.`);
                 }}
-                style={{ width: isMobile ? "100%" : "auto", padding: "12px 16px", borderRadius: "12px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 800, cursor: "pointer" }}
+                style={{ width: isMobile ? "100%" : "auto", padding: "10px 16px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 600, cursor: "pointer", fontSize: "13px" }}
               >
                 Salin Public ID
               </button>
@@ -250,12 +250,13 @@ export default function AdminOrdersPage() {
                 disabled={retryingOrderId === selectedOrder.id || !canRetryOrder(selectedOrder)}
                 title={canRetryOrder(selectedOrder) ? "Kirim ulang dokumen ke proses checker" : getRetryBlockedReason(selectedOrder)}
                 style={{
-                  padding: "12px 16px",
-                  borderRadius: "12px",
+                  padding: "10px 16px",
+                  borderRadius: "10px",
                   border: "none",
-                  background: canRetryOrder(selectedOrder) ? "#69ebc0" : "#44536c",
-                  color: canRetryOrder(selectedOrder) ? "#0b1d28" : "#dce7f5",
-                  fontWeight: 800,
+                  background: canRetryOrder(selectedOrder) ? "#2563eb" : "#e2e8f0",
+                  color: canRetryOrder(selectedOrder) ? "#ffffff" : "#94a3b8",
+                  fontWeight: 600,
+                  fontSize: "13px",
                   cursor: retryingOrderId === selectedOrder.id || !canRetryOrder(selectedOrder) ? "not-allowed" : "pointer",
                   opacity: retryingOrderId === selectedOrder.id ? 0.7 : 1,
                   width: isMobile ? "100%" : "auto"
@@ -268,7 +269,7 @@ export default function AdminOrdersPage() {
                   href={selectedOrder.resultReportUrl}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ width: isMobile ? "100%" : "auto", textAlign: "center", padding: "12px 16px", borderRadius: "12px", background: "#69a8ff", color: "#0d2030", fontWeight: 800, textDecoration: "none" }}
+                  style={{ width: isMobile ? "100%" : "auto", textAlign: "center", padding: "10px 16px", borderRadius: "10px", background: "#059669", color: "#ffffff", fontWeight: 600, fontSize: "13px", textDecoration: "none" }}
                 >
                   Buka Report
                 </a>
@@ -278,14 +279,14 @@ export default function AdminOrdersPage() {
                   href={selectedOrder.payments[0].qrUrl || "#"}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ width: isMobile ? "100%" : "auto", textAlign: "center", padding: "12px 16px", borderRadius: "12px", background: "#2b3851", color: "#cfe0ff", fontWeight: 800, textDecoration: "none" }}
+                  style={{ width: isMobile ? "100%" : "auto", textAlign: "center", padding: "10px 16px", borderRadius: "10px", background: "#f1f5f9", color: "#334155", fontWeight: 600, fontSize: "13px", textDecoration: "none", border: `1px solid ${borderColor}` }}
                 >
                   Lihat QR Payment
                 </a>
               ) : null}
             </div>
             {!canRetryOrder(selectedOrder) ? (
-              <div style={{ borderRadius: "14px", background: innerSurface, border: `1px solid ${borderColor}`, padding: "14px 16px", color: "#c2d1e6", fontSize: "13px", fontWeight: 700 }}>
+              <div style={{ borderRadius: "10px", background: "#fef3c7", border: "1px solid #fde68a", padding: "12px 14px", color: "#92400e", fontSize: "13px", fontWeight: 600 }}>
                 {getRetryBlockedReason(selectedOrder)}
               </div>
             ) : null}
@@ -293,17 +294,17 @@ export default function AdminOrdersPage() {
         ) : null}
       </ActionDialog>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", marginBottom: "32px", gap: "16px", flexDirection: isMobile ? "column" : "row" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", marginBottom: "24px", gap: "16px", flexDirection: isMobile ? "column" : "row" }}>
         <div>
-          <h1 style={{ fontSize: "28px", fontWeight: 800, color: textPrimary }}>Daftar Pesanan</h1>
-          <p style={{ color: textMuted }}>Kelola semua transaksi dan proses pengecekan.</p>
+          <h1 style={{ fontSize: "24px", fontWeight: 800, color: textPrimary }}>Daftar Pesanan</h1>
+          <p style={{ color: textMuted, fontSize: "14px", marginTop: "4px" }}>Kelola semua transaksi dan proses pengecekan.</p>
         </div>
         
-        <div style={{ display: "flex", gap: "12px", width: isMobile ? "100%" : "auto", flexDirection: isMobile ? "column" : "row" }}>
+        <div style={{ display: "flex", gap: "10px", width: isMobile ? "100%" : "auto", flexDirection: isMobile ? "column" : "row" }}>
           <select 
             value={filterPayment}
             onChange={(e) => setFilterPayment(e.target.value)}
-            style={{ padding: "10px 16px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 600, width: isMobile ? "100%" : "auto" }}
+            style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 500, width: isMobile ? "100%" : "auto", fontSize: "13px" }}
           >
             <option value="">Semua Pembayaran</option>
             <option value="PAID">Lunas</option>
@@ -314,7 +315,7 @@ export default function AdminOrdersPage() {
           <select 
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ padding: "10px 16px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 600, width: isMobile ? "100%" : "auto" }}
+            style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 500, width: isMobile ? "100%" : "auto", fontSize: "13px" }}
           >
             <option value="">Semua Status Cek</option>
             <option value="WAITING_PAYMENT">Menunggu Bayar</option>
@@ -327,16 +328,16 @@ export default function AdminOrdersPage() {
       </div>
 
       {notice ? (
-        <div style={{ marginBottom: "20px", padding: "14px 16px", borderRadius: "14px", background: "rgba(105, 235, 192, 0.09)", color: "#9deed3", border: "1px solid rgba(105, 235, 192, 0.16)", fontWeight: 800 }}>
+        <div style={{ marginBottom: "16px", padding: "12px 16px", borderRadius: "12px", background: notice.includes("berhasil") ? "#dcfce7" : "#fef2f2", color: notice.includes("berhasil") ? "#166534" : "#991b1b", border: notice.includes("berhasil") ? "1px solid #bbf7d0" : "1px solid #fecaca", fontWeight: 600, fontSize: "14px" }}>
           {notice}
         </div>
       ) : null}
 
-      <div style={{ background: surface, borderRadius: "20px", border: `1px solid ${borderColor}`, overflow: "hidden" }}>
+      <div style={{ background: surface, borderRadius: "16px", border: `1px solid ${borderColor}`, overflow: "hidden", boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)" }}>
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: textMuted }}>Memuat pesanan...</div>
         ) : isMobile ? (
-          <div style={{ display: "grid", gap: "12px", padding: "14px" }}>
+          <div style={{ display: "grid", gap: "10px", padding: "12px" }}>
             {orders.map((order) => {
               const paymentTone =
                 order.paymentStatus === "PAID"
@@ -350,13 +351,13 @@ export default function AdminOrdersPage() {
                     ? { background: "#dbeafe", color: "#1e40af" }
                     : order.checkStatus === "FAILED"
                       ? { background: "#fee2e2", color: "#991b1b" }
-                      : { background: "#e2e8f0", color: "#475569" };
+                      : { background: "#f1f5f9", color: "#475569" };
 
               return (
                 <article
                   key={order.id}
                   style={{
-                    borderRadius: "16px",
+                    borderRadius: "12px",
                     border: `1px solid ${borderColor}`,
                     background: innerSurface,
                     padding: "14px"
@@ -364,20 +365,20 @@ export default function AdminOrdersPage() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", marginBottom: "12px" }}>
                     <div>
-                      <div style={{ fontWeight: 800, color: textPrimary, fontSize: "14px" }}>{order.payments[0]?.providerRef || "N/A"}</div>
-                      <div style={{ fontSize: "11px", color: textMuted, marginTop: "4px" }}>{order.id}</div>
+                      <div style={{ fontWeight: 700, color: textPrimary, fontSize: "14px" }}>{order.payments[0]?.providerRef || "N/A"}</div>
+                      <div style={{ fontSize: "11px", color: textMuted, marginTop: "2px" }}>{order.id}</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setSelectedOrder(order)}
                       style={{
-                        padding: "8px 12px",
-                        borderRadius: "10px",
+                        padding: "6px 12px",
+                        borderRadius: "8px",
                         border: `1px solid ${borderColor}`,
-                        background: "#162136",
+                        background: "#ffffff",
                         color: textPrimary,
                         fontSize: "12px",
-                        fontWeight: 700,
+                        fontWeight: 600,
                         cursor: "pointer",
                         whiteSpace: "nowrap"
                       }}
@@ -386,44 +387,44 @@ export default function AdminOrdersPage() {
                     </button>
                   </div>
 
-                  <div style={{ display: "grid", gap: "10px" }}>
+                  <div style={{ display: "grid", gap: "8px" }}>
                     <div>
-                      <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>Customer</div>
-                      <div style={{ color: textPrimary, fontWeight: 700 }}>{order.user.fullName}</div>
-                      <div style={{ color: textMuted, fontSize: "13px", marginTop: "2px", wordBreak: "break-word" }}>{order.user.email}</div>
+                      <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Customer</div>
+                      <div style={{ color: textPrimary, fontWeight: 600, fontSize: "14px" }}>{order.user.fullName}</div>
+                      <div style={{ color: textMuted, fontSize: "12px", marginTop: "2px", wordBreak: "break-word" }}>{order.user.email}</div>
                     </div>
 
                     <div>
-                      <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>File & Paket</div>
-                      <div style={{ color: "#dbe7f4", fontSize: "13px", lineHeight: 1.5, wordBreak: "break-word" }}>{order.originalName}</div>
-                      <div style={{ fontSize: "12px", color: "#8fc1ff", fontWeight: 700, marginTop: "4px" }}>{order.package.name}</div>
+                      <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>File & Paket</div>
+                      <div style={{ color: "#334155", fontSize: "13px", lineHeight: 1.5, wordBreak: "break-word" }}>{order.originalName}</div>
+                      <div style={{ fontSize: "12px", color: "#2563eb", fontWeight: 600, marginTop: "2px" }}>{order.package.name}</div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                       <div>
-                        <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>Waktu</div>
-                        <div style={{ color: "#c8d7ea", fontWeight: 600, fontSize: "13px", lineHeight: 1.4 }}>
+                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Waktu</div>
+                        <div style={{ color: "#475569", fontWeight: 500, fontSize: "12px", lineHeight: 1.4 }}>
                           {formatWibDateTime(order.createdAt)}
                         </div>
                       </div>
                       <div>
-                        <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>Nominal</div>
-                        <div style={{ color: textPrimary, fontWeight: 800 }}>{formatRupiah(order.package.price)}</div>
+                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Nominal</div>
+                        <div style={{ color: textPrimary, fontWeight: 700 }}>{formatRupiah(order.package.price)}</div>
                       </div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                       <div>
-                        <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>Pembayaran</div>
+                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Pembayaran</div>
                         <span
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            minHeight: "28px",
-                            padding: "0 10px",
+                            minHeight: "26px",
+                            padding: "0 8px",
                             borderRadius: "999px",
                             fontSize: "11px",
-                            fontWeight: 800,
+                            fontWeight: 600,
                             background: paymentTone.background,
                             color: paymentTone.color
                           }}
@@ -432,16 +433,16 @@ export default function AdminOrdersPage() {
                         </span>
                       </div>
                       <div>
-                        <div style={{ color: "#6f86a8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>Proses Cek</div>
+                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Proses Cek</div>
                         <span
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            minHeight: "28px",
-                            padding: "0 10px",
+                            minHeight: "26px",
+                            padding: "0 8px",
                             borderRadius: "999px",
                             fontSize: "11px",
-                            fontWeight: 800,
+                            fontWeight: 600,
                             background: checkTone.background,
                             color: checkTone.color
                           }}
@@ -457,13 +458,13 @@ export default function AdminOrdersPage() {
                       disabled={retryingOrderId === order.id || !canRetryOrder(order)}
                       title={canRetryOrder(order) ? "Kirim ulang dokumen ke proses checker" : getRetryBlockedReason(order)}
                       style={{
-                        padding: "10px 12px",
+                        padding: "8px 12px",
                         borderRadius: "10px",
                         border: "none",
-                        background: canRetryOrder(order) ? "#69ebc0" : "#44536c",
-                        color: canRetryOrder(order) ? "#0b1d28" : "#dce7f5",
+                        background: canRetryOrder(order) ? "#2563eb" : "#e2e8f0",
+                        color: canRetryOrder(order) ? "#ffffff" : "#94a3b8",
                         fontSize: "13px",
-                        fontWeight: 800,
+                        fontWeight: 600,
                         cursor: retryingOrderId === order.id || !canRetryOrder(order) ? "not-allowed" : "pointer",
                         opacity: retryingOrderId === order.id ? 0.7 : 1,
                         width: "100%"
@@ -479,53 +480,53 @@ export default function AdminOrdersPage() {
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: `1px solid ${borderColor}`, background: "#1c273c" }}>
-                <th style={{ padding: "16px", color: textMuted, fontWeight: 600 }}>Invoice / Order ID</th>
-                <th style={{ padding: "16px", color: textMuted, fontWeight: 600 }}>Customer</th>
-                <th style={{ padding: "16px", color: textMuted, fontWeight: 600 }}>File & Paket</th>
-                <th style={{ padding: "16px", color: textMuted, fontWeight: 600 }}>Waktu Pengecekan</th>
-                <th style={{ padding: "16px", color: textMuted, fontWeight: 600 }}>Pembayaran</th>
-                <th style={{ padding: "16px", color: textMuted, fontWeight: 600 }}>Proses Cek</th>
-                <th style={{ padding: "16px", color: textMuted, fontWeight: 600 }}>Aksi</th>
+              <tr style={{ textAlign: "left", borderBottom: `1px solid ${borderColor}`, background: "#f8fafc" }}>
+                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Invoice / Order ID</th>
+                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Customer</th>
+                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>File & Paket</th>
+                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Waktu Pengecekan</th>
+                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Pembayaran</th>
+                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Proses Cek</th>
+                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr key={order.id} style={{ borderBottom: `1px solid ${borderColor}` }}>
-                  <td style={{ padding: "16px" }}>
-                    <div style={{ fontWeight: 700, fontSize: "14px", color: textPrimary }}>{order.payments[0]?.providerRef || "N/A"}</div>
+                <tr key={order.id} style={{ borderBottom: `1px solid #f1f5f9` }}>
+                  <td style={{ padding: "14px 16px" }}>
+                    <div style={{ fontWeight: 600, fontSize: "14px", color: textPrimary }}>{order.payments[0]?.providerRef || "N/A"}</div>
                     <div style={{ fontSize: "11px", color: textMuted }}>{order.id}</div>
                   </td>
-                  <td style={{ padding: "16px" }}>
+                  <td style={{ padding: "14px 16px" }}>
                     <div style={{ fontWeight: 600, fontSize: "14px", color: textPrimary }}>{order.user.fullName}</div>
                     <div style={{ fontSize: "12px", color: textMuted }}>{order.user.email}</div>
                   </td>
-                  <td style={{ padding: "16px" }}>
-                    <div style={{ fontSize: "14px", fontWeight: 500, color: "#dbe7f4" }}>{order.originalName}</div>
-                    <div style={{ fontSize: "12px", color: "#8fc1ff", fontWeight: 700 }}>{order.package.name}</div>
+                  <td style={{ padding: "14px 16px" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 500, color: "#334155" }}>{order.originalName}</div>
+                    <div style={{ fontSize: "12px", color: "#2563eb", fontWeight: 600 }}>{order.package.name}</div>
                   </td>
-                  <td style={{ padding: "16px", color: "#c8d7ea", fontWeight: 600, whiteSpace: "nowrap" }}>
+                  <td style={{ padding: "14px 16px", color: "#475569", fontWeight: 500, whiteSpace: "nowrap", fontSize: "13px" }}>
                     {formatWibDateTime(order.createdAt)}
                   </td>
-                  <td style={{ padding: "16px" }}>
-                    <div style={{ fontWeight: 800, fontSize: "14px", marginBottom: "4px", color: textPrimary }}>{formatRupiah(order.package.price)}</div>
+                  <td style={{ padding: "14px 16px" }}>
+                    <div style={{ fontWeight: 700, fontSize: "14px", marginBottom: "4px", color: textPrimary }}>{formatRupiah(order.package.price)}</div>
                     <span style={{
-                      padding: "4px 10px",
-                      borderRadius: "6px",
+                      padding: "2px 8px",
+                      borderRadius: "999px",
                       fontSize: "11px",
-                      fontWeight: 800,
+                      fontWeight: 600,
                       background: order.paymentStatus === "PAID" ? "#dcfce7" : "#fee2e2",
                       color: order.paymentStatus === "PAID" ? "#166534" : "#991b1b"
                     }}>
                       {order.paymentStatus}
                     </span>
                   </td>
-                  <td style={{ padding: "16px" }}>
+                  <td style={{ padding: "14px 16px" }}>
                     <span style={{
-                      padding: "4px 10px",
-                      borderRadius: "6px",
+                      padding: "2px 8px",
+                      borderRadius: "999px",
                       fontSize: "11px",
-                      fontWeight: 800,
+                      fontWeight: 600,
                       background:
                         order.checkStatus === "COMPLETED"
                           ? "#dcfce7"
@@ -546,16 +547,16 @@ export default function AdminOrdersPage() {
                       {order.checkStatus}
                     </span>
                   </td>
-                  <td style={{ padding: "16px" }}>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <td style={{ padding: "14px 16px" }}>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                       <button style={{
-                        padding: "8px 12px",
+                        padding: "6px 12px",
                         borderRadius: "8px",
                         border: `1px solid ${borderColor}`,
-                        background: innerSurface,
+                        background: "#ffffff",
                         color: textPrimary,
-                        fontSize: "13px",
-                        fontWeight: 700,
+                        fontSize: "12px",
+                        fontWeight: 600,
                         cursor: "pointer"
                       }}
                       onClick={() => setSelectedOrder(order)}
@@ -568,13 +569,13 @@ export default function AdminOrdersPage() {
                         disabled={retryingOrderId === order.id || !canRetryOrder(order)}
                         title={canRetryOrder(order) ? "Kirim ulang dokumen ke proses checker" : getRetryBlockedReason(order)}
                         style={{
-                          padding: "8px 12px",
+                          padding: "6px 12px",
                           borderRadius: "8px",
                           border: "none",
-                          background: canRetryOrder(order) ? "#69ebc0" : "#44536c",
-                          color: canRetryOrder(order) ? "#0b1d28" : "#dce7f5",
-                          fontSize: "13px",
-                          fontWeight: 700,
+                          background: canRetryOrder(order) ? "#2563eb" : "#e2e8f0",
+                          color: canRetryOrder(order) ? "#ffffff" : "#94a3b8",
+                          fontSize: "12px",
+                          fontWeight: 600,
                           cursor: retryingOrderId === order.id || !canRetryOrder(order) ? "not-allowed" : "pointer",
                           opacity: retryingOrderId === order.id ? 0.7 : 1
                         }}
@@ -589,23 +590,22 @@ export default function AdminOrdersPage() {
           </table>
         )}
         {!loading && orders.length === 0 && (
-          <div style={{ padding: "80px", textAlign: "center", color: textMuted }}>
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔍</div>
-            <p>Tidak ada pesanan yang ditemukan.</p>
+          <div style={{ padding: "60px", textAlign: "center", color: textMuted }}>
+            <p style={{ fontWeight: 600, fontSize: "15px" }}>Tidak ada pesanan yang ditemukan.</p>
           </div>
         )}
       </div>
       {!loading && pagination.totalItems > 0 ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginTop: "18px", flexWrap: "wrap" }}>
-          <div style={{ fontSize: "13px", color: textMuted, fontWeight: 700 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
+          <div style={{ fontSize: "13px", color: textMuted, fontWeight: 600 }}>
             Halaman {pagination.page} dari {Math.max(1, pagination.totalPages)}
           </div>
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
             <button
               type="button"
               disabled={pagination.page <= 1}
               onClick={() => void fetchOrders(Math.max(1, pagination.page - 1))}
-              style={{ padding: "10px 14px", borderRadius: "12px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 800, cursor: pagination.page <= 1 ? "not-allowed" : "pointer", opacity: pagination.page <= 1 ? 0.5 : 1 }}
+              style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 600, fontSize: "13px", cursor: pagination.page <= 1 ? "not-allowed" : "pointer", opacity: pagination.page <= 1 ? 0.5 : 1 }}
             >
               Sebelumnya
             </button>
@@ -613,7 +613,7 @@ export default function AdminOrdersPage() {
               type="button"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => void fetchOrders(Math.min(pagination.totalPages, pagination.page + 1))}
-              style={{ padding: "10px 14px", borderRadius: "12px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 800, cursor: pagination.page >= pagination.totalPages ? "not-allowed" : "pointer", opacity: pagination.page >= pagination.totalPages ? 0.5 : 1 }}
+              style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 600, fontSize: "13px", cursor: pagination.page >= pagination.totalPages ? "not-allowed" : "pointer", opacity: pagination.page >= pagination.totalPages ? 0.5 : 1 }}
             >
               Berikutnya
             </button>
