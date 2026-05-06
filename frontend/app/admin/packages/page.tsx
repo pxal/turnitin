@@ -51,37 +51,39 @@ const emptyVoucherForm = {
   isActive: true
 };
 
-const shellStyles = {
+const styles = {
   card: {
-    background: "#182235",
-    border: "1px solid rgba(143, 163, 194, 0.14)",
-    borderRadius: "20px",
-    boxShadow: "0 18px 40px rgba(0, 0, 0, 0.18)"
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "16px",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)"
   } as const,
   title: {
-    fontSize: "20px",
-    fontWeight: 800,
-    color: "#f8fbff"
+    fontSize: "18px",
+    fontWeight: 700,
+    color: "#0f172a"
   } as const,
   muted: {
-    color: "#8196b4"
+    color: "#64748b"
   } as const,
   button: {
     border: "none",
-    borderRadius: "12px",
-    padding: "11px 16px",
-    fontWeight: 700,
-    cursor: "pointer"
+    borderRadius: "10px",
+    padding: "10px 16px",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: "13px"
   } as const,
   input: {
     width: "100%",
-    height: "46px",
-    borderRadius: "12px",
-    border: "1px solid rgba(143, 163, 194, 0.18)",
-    background: "#111a2d",
-    color: "#eff6ff",
+    height: "42px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    color: "#0f172a",
     padding: "0 14px",
-    fontFamily: "inherit"
+    fontFamily: "inherit",
+    fontSize: "14px"
   } as const
 };
 
@@ -106,8 +108,8 @@ function SectionHeader({
       }}
     >
       <div>
-        <h3 style={{ ...shellStyles.title, fontSize: "22px" }}>{title}</h3>
-        {subtitle ? <p style={{ ...shellStyles.muted, fontSize: "14px", marginTop: "4px" }}>{subtitle}</p> : null}
+        <h3 style={{ ...styles.title, fontSize: "18px" }}>{title}</h3>
+        {subtitle ? <p style={{ ...styles.muted, fontSize: "13px", marginTop: "4px" }}>{subtitle}</p> : null}
       </div>
       {action}
     </div>
@@ -138,23 +140,23 @@ function AdminPagination({
         justifyContent: "space-between",
         alignItems: "center",
         gap: "12px",
-        marginTop: "18px",
+        marginTop: "16px",
         flexWrap: "wrap"
       }}
     >
-      <div style={{ fontSize: "13px", color: "#8196b4", fontWeight: 700 }}>
+      <div style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>
         Halaman {page} dari {Math.max(1, totalPages)}
       </div>
-      <div style={{ display: "flex", gap: "10px" }}>
+      <div style={{ display: "flex", gap: "8px" }}>
         <button
           type="button"
           disabled={page <= 1}
           onClick={onPrevious}
           style={{
-            ...shellStyles.button,
-            background: "#111a2d",
-            color: "#d8e4f2",
-            border: "1px solid rgba(143, 163, 194, 0.14)",
+            ...styles.button,
+            background: "#ffffff",
+            color: "#0f172a",
+            border: "1px solid #e2e8f0",
             opacity: page <= 1 ? 0.45 : 1
           }}
         >
@@ -165,10 +167,10 @@ function AdminPagination({
           disabled={page >= totalPages}
           onClick={onNext}
           style={{
-            ...shellStyles.button,
-            background: "#111a2d",
-            color: "#d8e4f2",
-            border: "1px solid rgba(143, 163, 194, 0.14)",
+            ...styles.button,
+            background: "#ffffff",
+            color: "#0f172a",
+            border: "1px solid #e2e8f0",
             opacity: page >= totalPages ? 0.45 : 1
           }}
         >
@@ -323,15 +325,15 @@ export default function AdminPackagesPage() {
   }
 
   if (loading && !data) {
-    return <div style={{ color: "#cfe0f4", fontWeight: 700 }}>Loading data paket...</div>;
+    return <div style={{ color: "#64748b", fontWeight: 600 }}>Loading data paket...</div>;
   }
 
   if (!data) {
-    return <div style={{ color: "#cfe0f4" }}>Gagal memuat data paket.</div>;
+    return <div style={{ color: "#64748b" }}>Gagal memuat data paket.</div>;
   }
 
   return (
-    <div style={{ display: "grid", gap: "24px" }}>
+    <div style={{ display: "grid", gap: "20px" }}>
       <ActionDialog
         open={Boolean(deleteTarget)}
         title={deleteTarget?.type === "packages" ? "Hapus Paket" : "Hapus Voucher"}
@@ -355,12 +357,13 @@ export default function AdminPackagesPage() {
       {message ? (
         <div
           style={{
-            padding: "14px 16px",
-            borderRadius: "16px",
-            background: "rgba(105, 235, 192, 0.09)",
-            border: "1px solid rgba(105, 235, 192, 0.16)",
-            color: "#9deed3",
-            fontWeight: 700
+            padding: "12px 16px",
+            borderRadius: "12px",
+            background: message.includes("berhasil") ? "#dcfce7" : "#fef2f2",
+            border: message.includes("berhasil") ? "1px solid #bbf7d0" : "1px solid #fecaca",
+            color: message.includes("berhasil") ? "#166534" : "#991b1b",
+            fontWeight: 600,
+            fontSize: "14px"
           }}
         >
           {message}
@@ -375,7 +378,7 @@ export default function AdminPackagesPage() {
           alignItems: "stretch"
         }}
       >
-        <article style={{ ...shellStyles.card, padding: isMobile ? "18px 14px" : "22px", height: "100%" }}>
+        <article style={{ ...styles.card, padding: isMobile ? "16px" : "20px", height: "100%" }}>
           <SectionHeader
             title="Kelola Paket Harga"
             subtitle="Atur daftar paket yang tampil di halaman publik."
@@ -387,10 +390,10 @@ export default function AdminPackagesPage() {
                   setPackageForm(emptyPackageForm);
                 }}
                 style={{
-                  ...shellStyles.button,
-                  background: "rgba(105, 168, 255, 0.14)",
-                  color: "#8fc1ff",
-                  border: "1px solid rgba(105, 168, 255, 0.18)",
+                  ...styles.button,
+                  background: "#eff6ff",
+                  color: "#2563eb",
+                  border: "1px solid #dbeafe",
                   width: isMobile ? "100%" : "auto"
                 }}
               >
@@ -403,32 +406,32 @@ export default function AdminPackagesPage() {
             onSubmit={handlePackageSubmit}
             style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.4fr) repeat(2, minmax(110px, 0.7fr)) minmax(120px, auto)",
-              gap: "12px",
-              marginBottom: "16px",
+              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.4fr) repeat(2, minmax(100px, 0.7fr)) minmax(100px, auto)",
+              gap: "10px",
+              marginBottom: "14px",
               alignItems: "end"
             }}
           >
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Nama Paket
-              <input value={packageForm.name} onChange={(e) => setPackageForm((prev) => ({ ...prev, name: e.target.value }))} style={shellStyles.input} />
+              <input value={packageForm.name} onChange={(e) => setPackageForm((prev) => ({ ...prev, name: e.target.value }))} style={styles.input} />
             </label>
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Maks MB
-              <input type="number" value={packageForm.maxFileSizeMb} onChange={(e) => setPackageForm((prev) => ({ ...prev, maxFileSizeMb: Number(e.target.value) }))} style={shellStyles.input} />
+              <input type="number" value={packageForm.maxFileSizeMb} onChange={(e) => setPackageForm((prev) => ({ ...prev, maxFileSizeMb: Number(e.target.value) }))} style={styles.input} />
             </label>
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Harga
-              <input type="number" value={packageForm.price} onChange={(e) => setPackageForm((prev) => ({ ...prev, price: Number(e.target.value) }))} style={shellStyles.input} />
+              <input type="number" value={packageForm.price} onChange={(e) => setPackageForm((prev) => ({ ...prev, price: Number(e.target.value) }))} style={styles.input} />
             </label>
             <button
               type="submit"
               disabled={saving}
               style={{
-                ...shellStyles.button,
-                height: "46px",
-                background: "#69ebc0",
-                color: "#0b1d28",
+                ...styles.button,
+                height: "42px",
+                background: "#2563eb",
+                color: "#ffffff",
                 opacity: saving ? 0.7 : 1,
                 width: isMobile ? "100%" : "auto"
               }}
@@ -437,34 +440,34 @@ export default function AdminPackagesPage() {
             </button>
           </form>
 
-          <label style={{ display: "inline-flex", alignItems: "center", gap: "10px", color: "#dce7f5", fontWeight: 700, marginBottom: "18px" }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#334155", fontWeight: 600, marginBottom: "16px", fontSize: "14px" }}>
             <input type="checkbox" checked={packageForm.isActive} onChange={(e) => setPackageForm((prev) => ({ ...prev, isActive: e.target.checked }))} />
             Paket aktif
           </label>
 
-          <div style={{ display: "grid", gap: "12px" }}>
+          <div style={{ display: "grid", gap: "10px" }}>
             {data.packages.map((pkg) => (
               <div
                 key={pkg.id}
                 style={{
-                  borderRadius: "18px",
-                  border: "1px solid rgba(143, 163, 194, 0.12)",
-                  background: "#111a2d",
-                  padding: "16px",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  padding: "14px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: isMobile ? "stretch" : "center",
-                  gap: "14px",
+                  gap: "12px",
                   flexDirection: isMobile ? "column" : "row"
                 }}
               >
                 <div>
-                  <div style={{ color: "#f8fbff", fontWeight: 800 }}>{pkg.name}</div>
-                  <div style={{ color: "#86a0c1", fontSize: "13px", marginTop: "4px" }}>
+                  <div style={{ color: "#0f172a", fontWeight: 700 }}>{pkg.name}</div>
+                  <div style={{ color: "#64748b", fontSize: "13px", marginTop: "2px" }}>
                     Maks {pkg.maxFileSizeMb} MB • {formatRupiah(pkg.price)} • {pkg.isActive ? "Aktif" : "Nonaktif"}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -476,14 +479,14 @@ export default function AdminPackagesPage() {
                         isActive: pkg.isActive
                       });
                     }}
-                    style={{ ...shellStyles.button, background: "rgba(105, 168, 255, 0.14)", color: "#8fc1ff" }}
+                    style={{ ...styles.button, background: "#eff6ff", color: "#2563eb" }}
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => setDeleteTarget({ type: "packages", id: pkg.id, label: pkg.name })}
-                    style={{ ...shellStyles.button, background: "rgba(255, 110, 106, 0.12)", color: "#ff8d8d" }}
+                    style={{ ...styles.button, background: "#fef2f2", color: "#dc2626" }}
                   >
                     Hapus
                   </button>
@@ -501,7 +504,7 @@ export default function AdminPackagesPage() {
           />
         </article>
 
-        <article style={{ ...shellStyles.card, padding: isMobile ? "18px 14px" : "22px", height: "100%" }}>
+        <article style={{ ...styles.card, padding: isMobile ? "16px" : "20px", height: "100%" }}>
           <SectionHeader
             title="Voucher Diskon"
             subtitle="Kelola kode promo untuk user. Voucher affiliate yang nonaktif dibersihkan otomatis."
@@ -513,10 +516,10 @@ export default function AdminPackagesPage() {
                   setVoucherForm(emptyVoucherForm);
                 }}
                 style={{
-                  ...shellStyles.button,
-                  background: "rgba(155, 140, 255, 0.14)",
-                  color: "#b7aaff",
-                  border: "1px solid rgba(155, 140, 255, 0.18)",
+                  ...styles.button,
+                  background: "#f5f3ff",
+                  color: "#7c3aed",
+                  border: "1px solid #ede9fe",
                   width: isMobile ? "100%" : "auto"
                 }}
               >
@@ -529,26 +532,26 @@ export default function AdminPackagesPage() {
             onSubmit={handleVoucherSubmit}
             style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) minmax(110px, 0.75fr)",
-              gap: "12px",
+              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) minmax(100px, 0.75fr)",
+              gap: "10px",
               alignItems: "end"
             }}
           >
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Kode Voucher
-              <input value={voucherForm.code} onChange={(e) => setVoucherForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))} style={shellStyles.input} />
+              <input value={voucherForm.code} onChange={(e) => setVoucherForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))} style={styles.input} />
             </label>
-            <label style={{ display: "grid", gap: "8px", color: "#dce7f5", fontWeight: 700, fontSize: "13px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
               Diskon %
-              <input type="number" value={voucherForm.discountPercent} onChange={(e) => setVoucherForm((prev) => ({ ...prev, discountPercent: Number(e.target.value) }))} style={shellStyles.input} />
+              <input type="number" value={voucherForm.discountPercent} onChange={(e) => setVoucherForm((prev) => ({ ...prev, discountPercent: Number(e.target.value) }))} style={styles.input} />
             </label>
             <button
               type="submit"
               disabled={saving}
               style={{
-                ...shellStyles.button,
-                background: "#9b8cff",
-                color: "#130d2a",
+                ...styles.button,
+                background: "#7c3aed",
+                color: "#ffffff",
                 gridColumn: isMobile ? "auto" : "1 / -1",
                 opacity: saving ? 0.7 : 1,
                 width: "100%"
@@ -558,34 +561,34 @@ export default function AdminPackagesPage() {
             </button>
           </form>
 
-          <label style={{ display: "inline-flex", alignItems: "center", gap: "10px", color: "#dce7f5", fontWeight: 700, margin: "16px 0 18px" }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#334155", fontWeight: 600, margin: "14px 0 16px", fontSize: "14px" }}>
             <input type="checkbox" checked={voucherForm.isActive} onChange={(e) => setVoucherForm((prev) => ({ ...prev, isActive: e.target.checked }))} />
             Voucher aktif
           </label>
 
-          <div style={{ display: "grid", gap: "12px" }}>
+          <div style={{ display: "grid", gap: "10px" }}>
             {data.vouchers.map((voucher) => (
               <div
                 key={voucher.id}
                 style={{
-                  borderRadius: "18px",
-                  border: "1px solid rgba(143, 163, 194, 0.12)",
-                  background: "#111a2d",
-                  padding: "16px",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  padding: "14px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: isMobile ? "stretch" : "center",
-                  gap: "14px",
+                  gap: "12px",
                   flexDirection: isMobile ? "column" : "row"
                 }}
               >
                 <div>
-                  <div style={{ color: "#f8fbff", fontWeight: 800 }}>{voucher.code}</div>
-                  <div style={{ color: "#86a0c1", fontSize: "13px", marginTop: "4px" }}>
+                  <div style={{ color: "#0f172a", fontWeight: 700 }}>{voucher.code}</div>
+                  <div style={{ color: "#64748b", fontSize: "13px", marginTop: "2px" }}>
                     Diskon {voucher.discountPercent}% • {voucher.isActive ? "Aktif" : "Nonaktif"}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -596,14 +599,14 @@ export default function AdminPackagesPage() {
                         isActive: voucher.isActive
                       });
                     }}
-                    style={{ ...shellStyles.button, background: "rgba(105, 168, 255, 0.14)", color: "#8fc1ff" }}
+                    style={{ ...styles.button, background: "#eff6ff", color: "#2563eb" }}
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => setDeleteTarget({ type: "vouchers", id: voucher.id, label: voucher.code })}
-                    style={{ ...shellStyles.button, background: "rgba(255, 110, 106, 0.12)", color: "#ff8d8d" }}
+                    style={{ ...styles.button, background: "#fef2f2", color: "#dc2626" }}
                   >
                     Hapus
                   </button>

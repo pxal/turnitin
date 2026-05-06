@@ -48,50 +48,65 @@ export default function AdminLoginPage() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background: "radial-gradient(circle at top right, #1e293b, #0f172a)",
+      background: "#f1f5f9",
       padding: "24px"
     }}>
       <div style={{
         width: "100%",
-        maxWidth: "440px",
-        background: "rgba(30, 41, 59, 0.7)",
-        backdropFilter: "blur(20px)",
-        borderRadius: "32px",
-        border: "1px solid rgba(255, 255, 255, 0.1)",
-        padding: "48px",
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+        maxWidth: "420px",
+        background: "#ffffff",
+        borderRadius: "20px",
+        border: "1px solid #e2e8f0",
+        padding: "40px",
+        boxShadow: "0 4px 24px rgba(0, 0, 0, 0.06)",
         textAlign: "center"
       }}>
-        {/* Logo Section */}
-        <div style={{ marginBottom: "40px" }}>
+        <div style={{ marginBottom: "32px" }}>
           {branding.logoUrl ? (
             <img
               src={branding.logoUrl}
               alt={branding.brandName}
-              style={{ width: "82px", height: "82px", objectFit: "contain", margin: "0 auto 20px", display: "block" }}
+              style={{ width: "72px", height: "72px", objectFit: "contain", margin: "0 auto 16px", display: "block" }}
             />
-          ) : null}
-          <h1 style={{ color: "white", fontSize: "28px", fontWeight: 900, marginBottom: "8px", letterSpacing: "-1px" }}>{branding.brandName} Admin</h1>
-          <p style={{ color: "#94a3b8", fontSize: "15px" }}>Masuk ke panel kontrol manajemen</p>
+          ) : (
+            <div style={{
+              width: "56px",
+              height: "56px",
+              borderRadius: "14px",
+              background: "#eff6ff",
+              border: "1px solid #dbeafe",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px"
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2.7 20 7.2v9.6l-8 4.5-8-4.5V7.2l8-4.5Zm0 2.3L6 8.36v7.28L12 19l6-3.36V8.36L12 5Z" fill="#2563eb" />
+              </svg>
+            </div>
+          )}
+          <h1 style={{ color: "#0f172a", fontSize: "24px", fontWeight: 800, marginBottom: "6px" }}>{branding.brandName} Admin</h1>
+          <p style={{ color: "#94a3b8", fontSize: "14px" }}>Masuk ke panel kontrol manajemen</p>
         </div>
 
-        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {error && (
             <div style={{ 
-              background: "rgba(239, 68, 68, 0.1)", 
-              border: "1px solid rgba(239, 68, 68, 0.2)", 
-              color: "#f87171", 
+              background: "#fef2f2", 
+              border: "1px solid #fecaca", 
+              color: "#991b1b", 
               padding: "12px", 
-              borderRadius: "12px", 
+              borderRadius: "10px", 
               fontSize: "13px", 
-              fontWeight: 600 
+              fontWeight: 600,
+              textAlign: "left"
             }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
           <div style={{ textAlign: "left" }}>
-            <label style={{ display: "block", color: "#94a3b8", fontSize: "13px", fontWeight: 700, marginBottom: "8px", paddingLeft: "4px" }}>EMAIL ADDRESS</label>
+            <label style={{ display: "block", color: "#64748b", fontSize: "12px", fontWeight: 600, marginBottom: "6px", paddingLeft: "2px", textTransform: "uppercase", letterSpacing: "0.05em" }}>EMAIL ADDRESS</label>
             <input 
               type="email" 
               value={email}
@@ -100,22 +115,22 @@ export default function AdminLoginPage() {
               required
               style={{
                 width: "100%",
-                padding: "16px 20px",
-                borderRadius: "14px",
-                background: "rgba(15, 23, 42, 0.5)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                color: "white",
-                fontSize: "15px",
+                padding: "12px 16px",
+                borderRadius: "10px",
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                color: "#0f172a",
+                fontSize: "14px",
                 outline: "none",
                 transition: "border-color 0.2s"
               }}
-              onFocus={(e) => e.target.style.borderColor = "#0b4fd9"}
-              onBlur={(e) => e.target.style.borderColor = "rgba(255, 255, 255, 0.1)"}
+              onFocus={(e) => e.target.style.borderColor = "#2563eb"}
+              onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
             />
           </div>
 
           <div style={{ textAlign: "left" }}>
-            <label style={{ display: "block", color: "#94a3b8", fontSize: "13px", fontWeight: 700, marginBottom: "8px", paddingLeft: "4px" }}>PASSWORD</label>
+            <label style={{ display: "block", color: "#64748b", fontSize: "12px", fontWeight: 600, marginBottom: "6px", paddingLeft: "2px", textTransform: "uppercase", letterSpacing: "0.05em" }}>PASSWORD</label>
             <input 
               type="password" 
               value={password}
@@ -124,17 +139,17 @@ export default function AdminLoginPage() {
               required
               style={{
                 width: "100%",
-                padding: "16px 20px",
-                borderRadius: "14px",
-                background: "rgba(15, 23, 42, 0.5)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                color: "white",
-                fontSize: "15px",
+                padding: "12px 16px",
+                borderRadius: "10px",
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                color: "#0f172a",
+                fontSize: "14px",
                 outline: "none",
                 transition: "border-color 0.2s"
               }}
-              onFocus={(e) => e.target.style.borderColor = "#0b4fd9"}
-              onBlur={(e) => e.target.style.borderColor = "rgba(255, 255, 255, 0.1)"}
+              onFocus={(e) => e.target.style.borderColor = "#2563eb"}
+              onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
             />
           </div>
 
@@ -143,37 +158,37 @@ export default function AdminLoginPage() {
             disabled={loading}
             style={{
               width: "100%",
-              padding: "18px",
-              borderRadius: "16px",
-              background: "linear-gradient(135deg, #0b4fd9, #083baf)",
-              color: "white",
-              fontSize: "16px",
-              fontWeight: 800,
+              padding: "14px",
+              borderRadius: "10px",
+              background: "#2563eb",
+              color: "#ffffff",
+              fontSize: "15px",
+              fontWeight: 700,
               border: "none",
               cursor: loading ? "not-allowed" : "pointer",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              boxShadow: "0 10px 20px -5px rgba(79, 70, 229, 0.4)",
-              marginTop: "12px",
+              marginTop: "8px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "10px"
+              gap: "8px",
+              opacity: loading ? 0.8 : 1,
+              transition: "opacity 0.2s"
             }}
           >
             {loading ? (
               <>
-                <div style={{ width: "20px", height: "20px", border: "3px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                <div style={{ width: "18px", height: "18px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                 Mengautentikasi...
               </>
             ) : "Masuk Dashboard"}
           </button>
         </form>
 
-        <div style={{ marginTop: "40px", paddingTop: "24px", borderTop: "1px solid rgba(255, 255, 255, 0.05)" }}>
-          <p style={{ color: "#64748b", fontSize: "13px" }}>
-            Hanya personil terotorisasi yang diijinkan masuk. Sistem memonitor aktivitas login untuk keamanan.
+        <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid #f1f5f9" }}>
+          <p style={{ color: "#94a3b8", fontSize: "12px" }}>
+            Hanya personil terotorisasi yang diijinkan masuk.
           </p>
-          <Link href="/" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "13px", fontWeight: 600, marginTop: "16px", display: "inline-block" }}>
+          <Link href="/" style={{ color: "#2563eb", textDecoration: "none", fontSize: "13px", fontWeight: 600, marginTop: "12px", display: "inline-block" }}>
             ← Kembali ke Beranda
           </Link>
         </div>

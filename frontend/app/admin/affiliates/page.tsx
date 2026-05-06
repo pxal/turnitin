@@ -93,11 +93,11 @@ function formatOrderSummary(item: AffiliateItem) {
 
 export default function AdminAffiliatesPage() {
   const isMobile = useIsMobile();
-  const surface = "#182235";
-  const innerSurface = "#111a2d";
-  const borderColor = "rgba(143, 163, 194, 0.14)";
-  const textPrimary = "#f8fbff";
-  const textMuted = "#8ea3c2";
+  const surface = "#ffffff";
+  const innerSurface = "#f8fafc";
+  const borderColor = "#e2e8f0";
+  const textPrimary = "#0f172a";
+  const textMuted = "#64748b";
   const [affiliates, setAffiliates] = useState<AffiliateItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -153,7 +153,7 @@ export default function AdminAffiliatesPage() {
   }, []);
 
   if (loading) {
-    return <div>Memuat data affiliate...</div>;
+    return <div style={{ color: textMuted, fontWeight: 600 }}>Memuat data affiliate...</div>;
   }
 
   const totalAffiliates = summary.totalAffiliates;
@@ -165,35 +165,36 @@ export default function AdminAffiliatesPage() {
       <div
         style={{
           background: surface,
-          borderRadius: "24px",
+          borderRadius: "16px",
           border: `1px solid ${borderColor}`,
-          padding: isMobile ? "24px" : "32px",
-          marginBottom: "24px"
+          padding: isMobile ? "20px" : "24px",
+          marginBottom: "20px",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)"
         }}
       >
-        <h1 style={{ fontSize: "28px", fontWeight: 900, color: textPrimary, marginBottom: "8px" }}>Kelola Affiliate</h1>
-        <p style={{ color: textMuted, lineHeight: 1.7, marginBottom: "20px" }}>
-          Tabel ini menampilkan affiliate yang sudah terdaftar beserta jumlah penggunaan kode voucher mereka, sehingga tetap rapi saat datanya semakin banyak.
+        <h1 style={{ fontSize: "24px", fontWeight: 800, color: textPrimary, marginBottom: "6px" }}>Kelola Affiliate</h1>
+        <p style={{ color: textMuted, lineHeight: 1.7, marginBottom: "18px", fontSize: "14px" }}>
+          Tabel ini menampilkan affiliate yang sudah terdaftar beserta jumlah penggunaan kode voucher mereka.
         </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-          <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "18px", padding: "18px 20px" }}>
-            <div style={{ fontSize: "13px", color: textMuted, marginBottom: "6px" }}>Total Affiliate</div>
-            <div style={{ fontSize: "28px", fontWeight: 900, color: "#69a8ff" }}>{totalAffiliates}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px" }}>
+          <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "16px 18px" }}>
+            <div style={{ fontSize: "12px", color: textMuted, marginBottom: "4px", fontWeight: 600 }}>Total Affiliate</div>
+            <div style={{ fontSize: "26px", fontWeight: 800, color: "#2563eb" }}>{totalAffiliates}</div>
           </div>
-          <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "18px", padding: "18px 20px" }}>
-            <div style={{ fontSize: "13px", color: textMuted, marginBottom: "6px" }}>Total Pemakaian Voucher</div>
-            <div style={{ fontSize: "28px", fontWeight: 900, color: "#69ebc0" }}>{totalVoucherUsages}</div>
+          <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "16px 18px" }}>
+            <div style={{ fontSize: "12px", color: textMuted, marginBottom: "4px", fontWeight: 600 }}>Total Pemakaian Voucher</div>
+            <div style={{ fontSize: "26px", fontWeight: 800, color: "#059669" }}>{totalVoucherUsages}</div>
           </div>
-          <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "18px", padding: "18px 20px" }}>
-            <div style={{ fontSize: "13px", color: textMuted, marginBottom: "6px" }}>Total Komisi Affiliate</div>
-            <div style={{ fontSize: "28px", fontWeight: 900, color: "#ffd66b" }}>{formatRupiah(totalAffiliateCommission)}</div>
+          <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "16px 18px" }}>
+            <div style={{ fontSize: "12px", color: textMuted, marginBottom: "4px", fontWeight: 600 }}>Total Komisi Affiliate</div>
+            <div style={{ fontSize: "26px", fontWeight: 800, color: "#d97706" }}>{formatRupiah(totalAffiliateCommission)}</div>
           </div>
         </div>
       </div>
 
       {message ? (
-        <div style={{ marginBottom: "18px", padding: "14px 16px", borderRadius: "16px", background: "rgba(255, 110, 106, 0.1)", border: "1px solid rgba(255, 110, 106, 0.14)", color: "#ff9b9b", fontWeight: 700 }}>
+        <div style={{ marginBottom: "16px", padding: "12px 16px", borderRadius: "12px", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", fontWeight: 600, fontSize: "14px" }}>
           {message}
         </div>
       ) : null}
@@ -201,18 +202,19 @@ export default function AdminAffiliatesPage() {
       <div
         style={{
           background: surface,
-          borderRadius: "24px",
+          borderRadius: "16px",
           border: `1px solid ${borderColor}`,
-          overflow: "hidden"
+          overflow: "hidden",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)"
         }}
       >
         {affiliates.length === 0 ? (
-          <div style={{ padding: "28px", color: textMuted }}>Belum ada affiliate yang terdaftar.</div>
+          <div style={{ padding: "28px", color: textMuted, fontWeight: 600 }}>Belum ada affiliate yang terdaftar.</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", minWidth: "1280px", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "#1c273c", borderBottom: `1px solid ${borderColor}` }}>
+                <tr style={{ background: innerSurface, borderBottom: `1px solid ${borderColor}` }}>
                   {[
                     "Affiliate",
                     "Status",
@@ -230,12 +232,12 @@ export default function AdminAffiliatesPage() {
                     <th
                       key={label}
                       style={{
-                        padding: "16px 18px",
+                        padding: "14px 16px",
                         textAlign: "left",
                         fontSize: "12px",
-                        fontWeight: 800,
-                        color: textMuted,
-                        letterSpacing: "0.7px",
+                        fontWeight: 600,
+                        color: "#94a3b8",
+                        letterSpacing: "0.05em",
                         textTransform: "uppercase",
                         whiteSpace: "nowrap"
                       }}
@@ -250,64 +252,64 @@ export default function AdminAffiliatesPage() {
                   <tr
                     key={affiliate.id}
                     style={{
-                      borderBottom: index === affiliates.length - 1 ? "none" : `1px solid ${borderColor}`,
+                      borderBottom: index === affiliates.length - 1 ? "none" : `1px solid #f1f5f9`,
                       verticalAlign: "top"
                     }}
                   >
-                    <td style={{ padding: "18px", minWidth: "220px" }}>
-                      <div style={{ fontWeight: 900, color: textPrimary, fontSize: "16px", marginBottom: "6px" }}>{affiliate.username}</div>
-                      <div style={{ color: textMuted, fontSize: "14px", lineHeight: 1.6 }}>{affiliate.email}</div>
+                    <td style={{ padding: "14px 16px", minWidth: "200px" }}>
+                      <div style={{ fontWeight: 700, color: textPrimary, fontSize: "14px", marginBottom: "2px" }}>{affiliate.username}</div>
+                      <div style={{ color: textMuted, fontSize: "13px", lineHeight: 1.5 }}>{affiliate.email}</div>
                     </td>
-                    <td style={{ padding: "18px", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "14px 16px", whiteSpace: "nowrap" }}>
                       <span
                         style={{
-                          padding: "6px 10px",
+                          padding: "4px 10px",
                           borderRadius: "999px",
-                          fontSize: "12px",
-                          fontWeight: 800,
-                          background: affiliate.isActive ? "rgba(105, 235, 192, 0.14)" : "rgba(143, 163, 194, 0.12)",
-                          color: affiliate.isActive ? "#69ebc0" : textMuted
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          background: affiliate.isActive ? "#dcfce7" : "#f1f5f9",
+                          color: affiliate.isActive ? "#166534" : textMuted
                         }}
                       >
                         {affiliate.isActive ? "Aktif" : "Nonaktif"}
                       </span>
                     </td>
-                    <td style={{ padding: "18px", minWidth: "190px" }}>
-                      <div style={{ fontWeight: 900, color: "#8fc1ff", fontSize: "16px", lineHeight: 1.5, wordBreak: "break-word" }}>
+                    <td style={{ padding: "14px 16px", minWidth: "180px" }}>
+                      <div style={{ fontWeight: 700, color: "#2563eb", fontSize: "14px", lineHeight: 1.5, wordBreak: "break-word" }}>
                         {affiliate.voucherCode}
                       </div>
                     </td>
-                    <td style={{ padding: "18px", whiteSpace: "nowrap", fontWeight: 900, color: textPrimary }}>
+                    <td style={{ padding: "14px 16px", whiteSpace: "nowrap", fontWeight: 700, color: textPrimary }}>
                       {affiliate.stats.totalVoucherUsages}
                     </td>
-                    <td style={{ padding: "18px", whiteSpace: "nowrap", fontWeight: 900, color: "#69a8ff" }}>
+                    <td style={{ padding: "14px 16px", whiteSpace: "nowrap", fontWeight: 700, color: "#2563eb" }}>
                       {affiliate.voucherDiscountPercent}%
                     </td>
-                    <td style={{ padding: "18px", whiteSpace: "nowrap", fontWeight: 800, color: "#8fc1ff" }}>
+                    <td style={{ padding: "14px 16px", whiteSpace: "nowrap", fontWeight: 600, color: "#475569" }}>
                       {formatRupiah(affiliate.commissionAmount)}
                     </td>
-                    <td style={{ padding: "18px", whiteSpace: "nowrap", fontWeight: 900, color: "#69ebc0" }}>
+                    <td style={{ padding: "14px 16px", whiteSpace: "nowrap", fontWeight: 700, color: "#059669" }}>
                       {formatRupiah(affiliate.stats.totalCommission)}
                     </td>
-                    <td style={{ padding: "18px", whiteSpace: "nowrap", fontWeight: 900, color: "#ffd66b" }}>
+                    <td style={{ padding: "14px 16px", whiteSpace: "nowrap", fontWeight: 700, color: "#d97706" }}>
                       {formatRupiah(affiliate.stats.totalRevenue)}
                     </td>
-                    <td style={{ padding: "18px", minWidth: "220px" }}>
-                      <div style={{ color: "#c8d7ea", fontSize: "13px", lineHeight: 1.7 }}>
+                    <td style={{ padding: "14px 16px", minWidth: "200px" }}>
+                      <div style={{ color: "#475569", fontSize: "13px", lineHeight: 1.7 }}>
                         {formatAccountSummary(affiliate)}
                       </div>
                     </td>
-                    <td style={{ padding: "18px", minWidth: "210px" }}>
-                      <div style={{ color: "#c8d7ea", fontSize: "13px", lineHeight: 1.7 }}>
+                    <td style={{ padding: "14px 16px", minWidth: "200px" }}>
+                      <div style={{ color: "#475569", fontSize: "13px", lineHeight: 1.7 }}>
                         {formatOrderSummary(affiliate)}
                       </div>
                     </td>
-                    <td style={{ padding: "18px", minWidth: "180px" }}>
-                      <div style={{ color: "#c8d7ea", fontSize: "13px", lineHeight: 1.7 }}>
+                    <td style={{ padding: "14px 16px", minWidth: "180px" }}>
+                      <div style={{ color: "#475569", fontSize: "13px", lineHeight: 1.7 }}>
                         {formatWithdrawalSummary(affiliate)}
                       </div>
                     </td>
-                    <td style={{ padding: "18px", whiteSpace: "nowrap", color: textMuted, fontSize: "13px" }}>
+                    <td style={{ padding: "14px 16px", whiteSpace: "nowrap", color: textMuted, fontSize: "13px" }}>
                       {new Date(affiliate.createdAt).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "short",
@@ -322,16 +324,16 @@ export default function AdminAffiliatesPage() {
         )}
       </div>
       {affiliates.length > 0 ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginTop: "18px", flexWrap: "wrap" }}>
-          <div style={{ fontSize: "13px", color: textMuted, fontWeight: 700 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
+          <div style={{ fontSize: "13px", color: textMuted, fontWeight: 600 }}>
             Halaman {pagination.page} dari {Math.max(1, pagination.totalPages)}
           </div>
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
             <button
               type="button"
               disabled={pagination.page <= 1}
               onClick={() => void loadAffiliates(Math.max(1, pagination.page - 1))}
-              style={{ padding: "10px 14px", borderRadius: "12px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 800, cursor: pagination.page <= 1 ? "not-allowed" : "pointer", opacity: pagination.page <= 1 ? 0.5 : 1 }}
+              style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 600, fontSize: "13px", cursor: pagination.page <= 1 ? "not-allowed" : "pointer", opacity: pagination.page <= 1 ? 0.5 : 1 }}
             >
               Sebelumnya
             </button>
@@ -339,7 +341,7 @@ export default function AdminAffiliatesPage() {
               type="button"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => void loadAffiliates(Math.min(pagination.totalPages, pagination.page + 1))}
-              style={{ padding: "10px 14px", borderRadius: "12px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 800, cursor: pagination.page >= pagination.totalPages ? "not-allowed" : "pointer", opacity: pagination.page >= pagination.totalPages ? 0.5 : 1 }}
+              style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 600, fontSize: "13px", cursor: pagination.page >= pagination.totalPages ? "not-allowed" : "pointer", opacity: pagination.page >= pagination.totalPages ? 0.5 : 1 }}
             >
               Berikutnya
             </button>
