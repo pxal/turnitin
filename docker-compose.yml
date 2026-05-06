@@ -1,0 +1,39 @@
+services:
+  backend:
+    container_name: turnitin-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-runner
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./backend/uploads:/app/backend/uploads
+      - ./backend/private-uploads:/app/backend/private-uploads
+
+  frontend:
+    container_name: turnitin-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-runner
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+# Catatan:
+# - network_mode: host cocok untuk server Linux produksi.
+# - Pada Docker Desktop Windows/Mac, host mode tidak bekerja seperti Linux.
+# - Karena Next.js membaca env saat build, rebuild image frontend setiap kali env publik berubah.

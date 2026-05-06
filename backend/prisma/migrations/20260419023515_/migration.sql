@@ -1,0 +1,3 @@
+-- No-op for fresh deployments.
+-- The original statements attempted to drop defaults from `Package.updatedAt`
+-- and `Voucher.updatedAt` before those columns existed in the migration order.

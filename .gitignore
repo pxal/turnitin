@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+.env
+coverage/
+*.log
+*.tsbuildinfo
+backend/uploads/
+backend/data/runtime-settings.json
+vendor/
+dist/
+build/

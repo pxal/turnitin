@@ -1,0 +1,14 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
+  "/history/page": "app/history/page.js",
+  "/processing/page": "app/processing/page.js",
+  "/payment/[id]/page": "app/payment/[id]/page.js",
+  "/payment/page": "app/payment/page.js",
+  "/processing/[id]/page": "app/processing/[id]/page.js",
+  "/upload/page": "app/upload/page.js",
+  "/admin/gateway/page": "app/admin/gateway/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/orders/page": "app/admin/orders/page.js",
+  "/admin/login/page": "app/admin/login/page.js"
+}

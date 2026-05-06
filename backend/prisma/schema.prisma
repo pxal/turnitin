@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+enum CheckStatus {
+  WAITING_PAYMENT
+  PAID
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  googleSub     String         @unique
+  fullName      String
+  avatarUrl     String?
+  whatsapp      String?
+  historyPinHash String?
+  historyPinUpdatedAt DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  checkRequests CheckRequest[]
+}
+
+model Package {
+  id            String         @id @default(cuid())
+  name          String
+  maxFileSizeMb Int            @unique
+  price         Int
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  checkRequests CheckRequest[]
+}
+
+model Voucher {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  discountPercent Int
+  affiliateId     String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  affiliate       Affiliate? @relation(fields: [affiliateId], references: [id])
+}
+
+model CheckRequest {
+  id              String        @id @default(cuid())
+  publicId        String        @unique
+  userId          String
+  packageId       String
+  affiliateId     String?
+  originalName    String
+  mimeType        String
+  fileSizeBytes   Int
+  sourceFileUrl   String?
+  paymentStatus   PaymentStatus @default(PENDING)
+  checkStatus     CheckStatus   @default(WAITING_PAYMENT)
+  checkerJobId    String?
+  similarityScore Int?
+  aiScore         Int?
+  originalAmount  Int           @default(0)
+  discountCode    String?
+  discountPercent Int?
+  discountAmount  Int           @default(0)
+  finalAmount     Int           @default(0)
+  affiliateCommissionAmount Int @default(0)
+  resultSummary   String?
+  resultReportUrl String?
+  paymentNotifiedAt DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id])
+  package         Package       @relation(fields: [packageId], references: [id])
+  affiliate       Affiliate?    @relation(fields: [affiliateId], references: [id])
+  payments        Payment[]
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  checkRequestId String
+  provider       String
+  providerRef    String?
+  amount         Int
+  qrUrl          String?
+  status         PaymentStatus @default(PENDING)
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  checkRequest   CheckRequest  @relation(fields: [checkRequestId], references: [id])
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Affiliate {
+  id                    String                @id @default(cuid())
+  email                 String                @unique
+  username              String                @unique
+  passwordHash          String
+  voucherCode           String                @unique
+  voucherDiscountPercent Int                  @default(5)
+  commissionAmount      Int                   @default(1000)
+  bankName              String?
+  bankAccountName       String?
+  bankAccountNumber     String?
+  isActive              Boolean               @default(true)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  vouchers              Voucher[]
+  checkRequests         CheckRequest[]
+  withdrawals           AffiliateWithdrawal[]
+}
+
+model AffiliateWithdrawal {
+  id          String           @id @default(cuid())
+  affiliateId String
+  amount      Int
+  bankName    String
+  bankAccountName String
+  bankAccountNumber String
+  status      WithdrawalStatus @default(PENDING)
+  note        String?
+  processedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  affiliate   Affiliate        @relation(fields: [affiliateId], references: [id])
+}

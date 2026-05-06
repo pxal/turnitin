@@ -1,0 +1,3 @@
+ALTER TABLE `User`
+  ADD COLUMN `historyPinHash` VARCHAR(191) NULL,
+  ADD COLUMN `historyPinUpdatedAt` DATETIME(3) NULL;

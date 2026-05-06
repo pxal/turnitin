@@ -1,0 +1,14 @@
+node_modules
+backend/node_modules
+frontend/node_modules
+.git
+.gitignore
+.tmp
+tmp
+backend/dist
+frontend/.next
+frontend/.next-verify
+backend/uploads
+backend/private-uploads
+backend/data
+npm-debug.log

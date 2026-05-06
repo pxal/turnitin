@@ -1,0 +1,33 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import PaymentView from "../../../components/payment-view";
+import AuthGuard from "../../../components/auth-guard";
+
+export const metadata: Metadata = {
+  title: "Pembayaran QRIS",
+  description: "Selesaikan pembayaran QRIS untuk memulai pengecekan dokumen Turnitin.",
+  robots: {
+    index: false,
+    follow: false
+  }
+};
+
+export default async function PaymentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  return (
+    <AuthGuard>
+      <main className="container" style={{ padding: "100px 0 80px" }}>
+        <Suspense fallback={
+          <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "16px" }}>
+            <div style={{ width: "48px", height: "48px", border: "4px solid #e5e7eb", borderTopColor: "#0b4fd9", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <p style={{ color: "#6b7280" }}>Memuat halaman pembayaran...</p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        }>
+          <PaymentView checkRequestId={id} />
+        </Suspense>
+      </main>
+    </AuthGuard>
+  );
+}
