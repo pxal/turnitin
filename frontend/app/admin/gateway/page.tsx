@@ -1,13 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  apiBaseUrl,
-  clearAdminSession,
-  withCredentials
-} from "../../../lib/api";
 import { useRouter } from "next/navigation";
+import { apiBaseUrl, clearAdminSession, withCredentials } from "../../../lib/api";
 import { useIsMobile } from "../../../lib/hooks/useIsMobile";
+import {
+  AdminAlert,
+  AdminButton,
+  AdminCard,
+  AdminCheckbox,
+  AdminInput,
+  AdminPageHeader,
+  AdminSectionHeader,
+  StatusBadge,
+  adminTokens
+} from "../../../components/admin/ui";
+
+const GatewayIcon = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11Zm2 1.5v2h12V8H6Zm0 5v4h5v-4H6Z"
+      fill="currentColor"
+    />
+  </svg>
+);
 
 export default function AdminGatewayPage() {
   const router = useRouter();
@@ -36,11 +52,6 @@ export default function AdminGatewayPage() {
     apiKeyMasked: "",
     secretKeyMasked: ""
   });
-  const surface = "#ffffff";
-  const innerSurface = "#f8fafc";
-  const borderColor = "#e2e8f0";
-  const textPrimary = "#0f172a";
-  const textMuted = "#64748b";
 
   function normalizeTemplateUrl(value: string, target: "backend" | "frontend") {
     if (!value) {
@@ -51,27 +62,23 @@ export default function AdminGatewayPage() {
       return value;
     }
 
-    const origin =
-      target === "backend"
-        ? apiBaseUrl || window.location.origin
-        : window.location.origin;
-
+    const origin = target === "backend" ? apiBaseUrl || window.location.origin : window.location.origin;
     return value.replace(/^https?:\/\/localhost:\d+/i, origin);
   }
 
   useEffect(() => {
     async function loadGateway() {
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/admin/gateway`, withCredentials());
-      const json = await res.json();
-      if (res.status === 401 || res.status === 403) {
-        clearAdminSession();
-        router.replace("/admin/login");
-        return;
-      }
-      if (!res.ok) {
-        throw new Error(json.message || "Gagal memuat gateway.");
-      }
+      try {
+        const res = await fetch(`${apiBaseUrl}/api/admin/gateway`, withCredentials());
+        const json = await res.json();
+        if (res.status === 401 || res.status === 403) {
+          clearAdminSession();
+          router.replace("/admin/login");
+          return;
+        }
+        if (!res.ok) {
+          throw new Error(json.message || "Gagal memuat gateway.");
+        }
 
         setForm({
           provider: json.provider || "sekalipay",
@@ -93,9 +100,9 @@ export default function AdminGatewayPage() {
           callbackUrlTemplate: normalizeTemplateUrl(json.callbackUrlTemplate || "", "backend"),
           returnUrlTemplate: normalizeTemplateUrl(json.returnUrlTemplate || "", "frontend")
         });
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Gagal memuat gateway.");
-    } finally {
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Gagal memuat gateway.");
+      } finally {
         setLoading(false);
       }
     }
@@ -154,148 +161,204 @@ export default function AdminGatewayPage() {
   }
 
   if (loading) {
-    return <div style={{ color: textMuted, fontWeight: 600 }}>Memuat konfigurasi gateway...</div>;
+    return (
+      <AdminCard padding="32px">
+        <div style={{ color: adminTokens.textMuted, fontWeight: 600 }}>Memuat konfigurasi gateway…</div>
+      </AdminCard>
+    );
   }
 
+  const credentialBadge = meta.hasApiKey && meta.hasSecretKey ? "success" : "warning";
+  const credentialLabel =
+    meta.hasApiKey && meta.hasSecretKey
+      ? "Kredensial lengkap"
+      : meta.hasApiKey
+        ? "Secret key kosong"
+        : meta.hasSecretKey
+          ? "API key kosong"
+          : "Belum ada kredensial";
+
   return (
-    <div>
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: 800, color: textPrimary }}>Payment Gateway</h1>
-        <p style={{ color: textMuted, fontSize: "14px", marginTop: "4px" }}>Kelola konfigurasi dan pantau koneksi ke payment gateway.</p>
-      </div>
-
-      {message ? (
-        <div style={{ marginBottom: "16px", padding: "12px 16px", borderRadius: "12px", background: "#dcfce7", border: "1px solid #bbf7d0", color: "#166534", fontWeight: 600, fontSize: "14px" }}>
-          {message}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div style={{ marginBottom: "16px", padding: "12px 16px", borderRadius: "12px", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", fontWeight: 600, fontSize: "14px" }}>
-          {error}
-        </div>
-      ) : null}
-
-      <form
-        onSubmit={handleSave}
-        style={{
-          background: surface,
-          borderRadius: "16px",
-          border: `1px solid ${borderColor}`,
-          padding: isMobile ? "20px" : "28px",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)"
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "24px", flexWrap: "wrap" }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: textPrimary }}>{providerName}</h2>
-            <p style={{ margin: "4px 0 0", color: textMuted, fontSize: "13px" }}>Konfigurasi koneksi ke {providerName}.</p>
+    <div style={{ display: "grid", gap: "20px" }}>
+      <AdminPageHeader
+        eyebrow="Modul Pembayaran"
+        title="Payment Gateway"
+        subtitle="Konfigurasi koneksi ke provider pembayaran beserta callback URL untuk integrasi otomatis."
+        icon={GatewayIcon}
+        actions={
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <StatusBadge tone={credentialBadge}>{credentialLabel}</StatusBadge>
+            <StatusBadge tone={form.mockPayment ? "warning" : "brand"}>
+              {form.mockPayment ? "Mode testing aktif" : "Mode produksi"}
+            </StatusBadge>
+            <StatusBadge tone={form.useHmac ? "violet" : "neutral"}>
+              {form.useHmac ? "HMAC aktif" : "HMAC nonaktif"}
+            </StatusBadge>
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            style={{ padding: "10px 18px", borderRadius: "10px", background: "#2563eb", color: "#ffffff", border: "none", fontSize: "13px", fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}
-          >
-            {saving ? "Menyimpan..." : "Simpan Gateway"}
-          </button>
-        </div>
+        }
+      />
 
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "16px" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>BASE URL</span>
-            <input
-              type="text"
+      {message ? <AdminAlert tone="success">{message}</AdminAlert> : null}
+      {error ? <AdminAlert tone="danger">{error}</AdminAlert> : null}
+
+      <form onSubmit={handleSave}>
+        <AdminCard padding={isMobile ? "20px" : "26px"}>
+          <AdminSectionHeader
+            title={providerName}
+            subtitle={`Konfigurasi koneksi ke ${providerName}.`}
+            icon={GatewayIcon}
+            actions={
+              <AdminButton type="submit" disabled={saving}>
+                {saving ? "Menyimpan…" : "Simpan Gateway"}
+              </AdminButton>
+            }
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+              gap: "16px"
+            }}
+          >
+            <AdminInput
+              label="Base URL"
               value={form.baseUrl}
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
               placeholder="https://api.sekalipay.com"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: "monospace" }}
+              inputStyle={{ fontFamily: "monospace" }}
             />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>MERCHANT CODE</span>
-            <input
-              type="text"
+            <AdminInput
+              label="Merchant Code"
               value={form.merchantCode}
               onChange={(e) => setForm((prev) => ({ ...prev, merchantCode: e.target.value }))}
               placeholder="Merchant code dari provider"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: "monospace" }}
+              inputStyle={{ fontFamily: "monospace" }}
             />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>API KEY</span>
-            <input
+            <AdminInput
+              label="API Key"
               type="password"
               value={form.apiKey}
               onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
               placeholder={meta.hasApiKey ? "Kosongkan jika tidak ingin mengganti" : "Masukkan API key"}
-              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: "monospace" }}
+              inputStyle={{ fontFamily: "monospace" }}
+              hint={meta.hasApiKey ? `Tersimpan: ${meta.apiKeyMasked}` : "Belum ada API key tersimpan."}
             />
-            <span style={{ fontSize: "12px", color: textMuted }}>
-              {meta.hasApiKey ? `Tersimpan: ${meta.apiKeyMasked}` : "Belum ada API key tersimpan."}
-            </span>
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>SECRET KEY</span>
-            <input
+            <AdminInput
+              label="Secret Key"
               type="password"
               value={form.secretKey}
               onChange={(e) => setForm((prev) => ({ ...prev, secretKey: e.target.value }))}
               placeholder={meta.hasSecretKey ? "Kosongkan jika tidak ingin mengganti" : "Masukkan secret key"}
-              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px", fontFamily: "monospace" }}
+              inputStyle={{ fontFamily: "monospace" }}
+              hint={meta.hasSecretKey ? `Tersimpan: ${meta.secretKeyMasked}` : "Belum ada secret key tersimpan."}
             />
-            <span style={{ fontSize: "12px", color: textMuted }}>
-              {meta.hasSecretKey ? `Tersimpan: ${meta.secretKeyMasked}` : "Belum ada secret key tersimpan."}
-            </span>
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>PAYMENT CODE</span>
-            <input
-              type="text"
+            <AdminInput
+              label="Payment Code"
               value={form.paymentCode}
               onChange={(e) => setForm((prev) => ({ ...prev, paymentCode: e.target.value }))}
               placeholder="QRIS"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontSize: "14px" }}
+              hint="Kode metode pembayaran utama (QRIS, BCA, dll)."
             />
-          </label>
-        </div>
+          </div>
 
-        <div style={{ display: "flex", gap: "24px", marginTop: "20px", flexWrap: "wrap" }}>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: 600, color: "#334155", fontSize: "14px" }}>
-            <input
-              type="checkbox"
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+              gap: "12px",
+              marginTop: "18px"
+            }}
+          >
+            <AdminCheckbox
+              label="Gunakan HMAC"
+              description="Aktifkan jika provider memerlukan signature HMAC pada setiap request."
               checked={form.useHmac}
-              onChange={(e) => setForm((prev) => ({ ...prev, useHmac: e.target.checked }))}
+              onChange={(next) => setForm((prev) => ({ ...prev, useHmac: next }))}
             />
-            Gunakan HMAC
-          </label>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: 600, color: "#334155", fontSize: "14px" }}>
-            <input
-              type="checkbox"
+            <AdminCheckbox
+              label="Mock Payment (Testing)"
+              description="Pembayaran disimulasikan tanpa request ke provider. Cocok untuk staging/QA."
               checked={form.mockPayment}
-              onChange={(e) => setForm((prev) => ({ ...prev, mockPayment: e.target.checked }))}
+              onChange={(next) => setForm((prev) => ({ ...prev, mockPayment: next }))}
             />
-            Mock Payment (Testing)
-          </label>
-        </div>
+          </div>
+        </AdminCard>
+      </form>
 
-        {(templates.callbackUrlTemplate || templates.returnUrlTemplate) ? (
-          <div style={{ marginTop: "20px", padding: "16px", borderRadius: "12px", background: innerSurface, border: `1px solid ${borderColor}` }}>
-            <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600, marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>URL Templates</div>
+      {templates.callbackUrlTemplate || templates.returnUrlTemplate ? (
+        <AdminCard padding={isMobile ? "20px" : "24px"}>
+          <AdminSectionHeader
+            title="URL Templates"
+            subtitle="Salin URL berikut ke dashboard provider untuk callback dan redirect setelah pembayaran."
+            icon={
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M11 17H7a4 4 0 0 1 0-8h2v2H7a2 2 0 1 0 0 4h4v2Zm-2-7h6v2H9v-2Zm4 7v-2h2a2 2 0 1 0 0-4h-2V9h2a4 4 0 0 1 0 8h-2Z"
+                  fill="currentColor"
+                />
+              </svg>
+            }
+          />
+          <div style={{ display: "grid", gap: "10px" }}>
             {templates.callbackUrlTemplate ? (
-              <div style={{ marginBottom: "8px" }}>
-                <span style={{ fontSize: "12px", color: textMuted }}>Callback: </span>
-                <span style={{ fontSize: "13px", color: "#2563eb", fontFamily: "monospace", wordBreak: "break-all" }}>{templates.callbackUrlTemplate}</span>
-              </div>
+              <UrlRow label="Callback URL" value={templates.callbackUrlTemplate} />
             ) : null}
             {templates.returnUrlTemplate ? (
-              <div>
-                <span style={{ fontSize: "12px", color: textMuted }}>Return: </span>
-                <span style={{ fontSize: "13px", color: "#2563eb", fontFamily: "monospace", wordBreak: "break-all" }}>{templates.returnUrlTemplate}</span>
-              </div>
+              <UrlRow label="Return URL" value={templates.returnUrlTemplate} />
             ) : null}
           </div>
-        ) : null}
-      </form>
+        </AdminCard>
+      ) : null}
+    </div>
+  );
+}
+
+function UrlRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: "8px",
+        padding: "12px 14px",
+        borderRadius: "12px",
+        border: `1px solid ${adminTokens.border}`,
+        background: adminTokens.surfaceMuted
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+        <span style={{ fontSize: "11px", color: adminTokens.textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          {label}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            void navigator.clipboard?.writeText(value);
+          }}
+          style={{
+            padding: "4px 10px",
+            borderRadius: "999px",
+            background: adminTokens.surface,
+            border: `1px solid ${adminTokens.border}`,
+            color: adminTokens.textSecondary,
+            fontSize: "11px",
+            fontWeight: 600,
+            cursor: "pointer"
+          }}
+        >
+          Salin
+        </button>
+      </div>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: "13px",
+          color: adminTokens.brand,
+          wordBreak: "break-all"
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }

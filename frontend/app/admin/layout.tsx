@@ -90,14 +90,17 @@ function SidebarIcon({
   return (
     <span
       style={{
-        width: "20px",
-        height: "20px",
+        width: "32px",
+        height: "32px",
+        borderRadius: "10px",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
+        background: active ? "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)" : "rgba(148, 163, 184, 0.08)",
         color: active ? "#ffffff" : "#94a3b8",
         flexShrink: 0,
-        transition: "color 0.18s ease"
+        boxShadow: active ? "0 4px 12px rgba(37, 99, 235, 0.32)" : "none",
+        transition: "background 0.2s ease, color 0.2s ease"
       }}
     >
       {children}
@@ -357,8 +360,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div style={{ display: "flex", minHeight: "100vh" }}>
         <aside
           style={{
-            width: isMobile ? "min(86vw, 280px)" : "264px",
-            background: "linear-gradient(180deg, #0b1220 0%, #111c33 100%)",
+            width: isMobile ? "min(86vw, 288px)" : "272px",
+            background:
+              "radial-gradient(120% 60% at 0% 0%, rgba(37, 99, 235, 0.18) 0%, rgba(11, 18, 32, 0) 60%), linear-gradient(180deg, #0b1220 0%, #0f172a 60%, #111c33 100%)",
             color: "#cbd5e1",
             display: "flex",
             flexDirection: "column",
@@ -370,14 +374,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             transition: "transform 0.24s ease",
             boxShadow: isMobile ? "4px 0 24px rgba(0, 0, 0, 0.25)" : "none",
             overflowY: "auto",
-            borderRight: "1px solid rgba(148, 163, 184, 0.1)"
+            borderRight: "1px solid rgba(148, 163, 184, 0.08)"
           }}
         >
           <div
             style={{
-              minHeight: "76px",
-              padding: "20px 20px 16px",
-              borderBottom: "1px solid rgba(148, 163, 184, 0.1)",
+              padding: "22px 20px 18px",
+              borderBottom: "1px solid rgba(148, 163, 184, 0.08)",
               display: "flex",
               alignItems: "center",
               gap: "12px"
@@ -385,8 +388,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           >
             <div
               style={{
-                width: "44px",
-                height: "44px",
+                width: "42px",
+                height: "42px",
                 borderRadius: "12px",
                 background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
                 color: "#ffffff",
@@ -397,40 +400,102 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 flexShrink: 0,
                 fontWeight: 800,
                 fontSize: "16px",
-                boxShadow: "0 6px 20px rgba(37, 99, 235, 0.35)"
+                boxShadow: "0 8px 24px rgba(37, 99, 235, 0.4)"
               }}
             >
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
                   alt={brandName}
-                  style={{ width: "44px", height: "44px", objectFit: "contain" }}
+                  style={{ width: "42px", height: "42px", objectFit: "contain" }}
                 />
               ) : (
                 brandInitial
               )}
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: "15px", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
                 {brandName}
               </div>
-              <div style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <div
+                style={{
+                  fontSize: "10.5px",
+                  color: "#94a3b8",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em"
+                }}
+              >
                 Admin Console
+              </div>
+            </div>
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Tutup menu"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(148, 163, 184, 0.16)",
+                  background: "rgba(148, 163, 184, 0.08)",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            ) : null}
+          </div>
+
+          <div style={{ padding: "14px 16px 8px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px 12px",
+                borderRadius: "12px",
+                background: "rgba(16, 185, 129, 0.08)",
+                border: "1px solid rgba(16, 185, 129, 0.18)"
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "999px",
+                  background: "#10b981",
+                  boxShadow: "0 0 0 4px rgba(16, 185, 129, 0.18)",
+                  flexShrink: 0
+                }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "#a7f3d0" }}>Sistem aktif</div>
+                <div style={{ fontSize: "10.5px", color: "#86efac", fontWeight: 500 }}>Semua layanan online</div>
               </div>
             </div>
           </div>
 
-          <nav style={{ padding: "18px 12px 12px", display: "flex", flexDirection: "column", gap: "16px", flex: 1 }}>
+          <nav style={{ padding: "6px 12px 12px", display: "flex", flexDirection: "column", gap: "18px", flex: 1 }}>
             {menuGroups.map((group) => (
               <div key={group.label} style={{ display: "grid", gap: "2px" }}>
-                <div style={{ padding: "0 12px 6px" }}>
+                <div style={{ padding: "0 12px 8px" }}>
                   <span
                     style={{
-                      fontSize: "10.5px",
+                      fontSize: "10px",
                       fontWeight: 700,
                       color: "#64748b",
                       textTransform: "uppercase",
-                      letterSpacing: "0.12em"
+                      letterSpacing: "0.16em"
                     }}
                   >
                     {group.label}
@@ -446,38 +511,38 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         display: "flex",
                         alignItems: "center",
                         gap: "12px",
-                        minHeight: "44px",
-                        padding: "0 12px",
-                        borderRadius: "10px",
+                        minHeight: "52px",
+                        padding: "8px 12px",
+                        borderRadius: "12px",
                         border: "none",
-                        background: active
-                          ? "linear-gradient(90deg, rgba(37, 99, 235, 0.22) 0%, rgba(79, 70, 229, 0.15) 100%)"
-                          : "transparent",
+                        background: active ? "rgba(37, 99, 235, 0.16)" : "transparent",
                         color: active ? "#ffffff" : "#cbd5e1",
-                        transition: "background 0.15s, color 0.15s",
+                        transition: "background 0.18s ease, color 0.18s ease",
                         textDecoration: "none",
-                        position: "relative"
+                        position: "relative",
+                        boxShadow: active ? "inset 0 0 0 1px rgba(96, 165, 250, 0.18)" : "none"
                       }}
                     >
-                      {active ? (
-                        <span
-                          aria-hidden="true"
-                          style={{
-                            position: "absolute",
-                            left: "-12px",
-                            top: "10px",
-                            bottom: "10px",
-                            width: "3px",
-                            borderRadius: "0 4px 4px 0",
-                            background: "linear-gradient(180deg, #60a5fa, #818cf8)"
-                          }}
-                        />
-                      ) : null}
                       {item.icon(active)}
                       <span style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-                        <span style={{ fontWeight: active ? 600 : 500, fontSize: "13.5px" }}>{item.label}</span>
+                        <span
+                          style={{
+                            fontWeight: active ? 700 : 600,
+                            fontSize: "13.5px",
+                            letterSpacing: "-0.005em"
+                          }}
+                        >
+                          {item.label}
+                        </span>
                         {item.description ? (
-                          <span style={{ fontSize: "10.5px", color: active ? "rgba(226,232,240,0.7)" : "#64748b", fontWeight: 500 }}>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: active ? "rgba(226, 232, 240, 0.7)" : "#64748b",
+                              fontWeight: 500,
+                              marginTop: "2px"
+                            }}
+                          >
                             {item.description}
                           </span>
                         ) : null}
@@ -501,6 +566,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                           {item.badge}
                         </span>
                       ) : null}
+                      {active ? (
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: "6px",
+                            height: "6px",
+                            borderRadius: "999px",
+                            background: "#60a5fa",
+                            flexShrink: 0
+                          }}
+                        />
+                      ) : null}
                     </Link>
                   );
                 })}
@@ -511,8 +588,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <div
             style={{
               marginTop: "auto",
-              padding: "16px",
-              borderTop: "1px solid rgba(148, 163, 184, 0.1)"
+              padding: "14px 16px 18px",
+              borderTop: "1px solid rgba(148, 163, 184, 0.08)"
             }}
           >
             <div
@@ -520,10 +597,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                borderRadius: "12px",
-                background: "rgba(255, 255, 255, 0.04)",
+                borderRadius: "14px",
+                background: "rgba(255, 255, 255, 0.05)",
                 border: "1px solid rgba(148, 163, 184, 0.12)",
-                padding: "10px 12px"
+                padding: "12px 14px"
               }}
             >
               <div
@@ -544,14 +621,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 AR
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: "13px", color: "#f8fafc" }}>Admin Root</div>
+                <div style={{ fontWeight: 700, fontSize: "13px", color: "#f8fafc" }}>Admin Root</div>
                 <div
                   style={{
                     fontSize: "11px",
                     color: "#94a3b8",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    whiteSpace: "nowrap"
+                    whiteSpace: "nowrap",
+                    fontWeight: 500
                   }}
                 >
                   admin@{brandName.toLowerCase().replace(/\s+/g, "")}.io
@@ -567,20 +645,23 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                       window.location.href = "/admin/login";
                     });
                 }}
+                title="Keluar panel"
+                aria-label="Keluar panel"
                 style={{
-                  border: "none",
-                  background: "transparent",
-                  color: "#94a3b8",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(148, 163, 184, 0.16)",
+                  background: "rgba(148, 163, 184, 0.08)",
+                  color: "#cbd5e1",
                   cursor: "pointer",
-                  padding: "6px",
-                  borderRadius: "8px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center"
+                  justifyContent: "center",
+                  flexShrink: 0
                 }}
-                aria-label="Keluar panel"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path
                     d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4v-2H6V7h4V5Zm5.59 2.41L14.17 8.83 16.34 11H9v2h7.34l-2.17 2.17 1.42 1.42L20.17 12l-4.58-4.59Z"
                     fill="currentColor"
@@ -604,8 +685,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               position: "sticky",
               top: 0,
               zIndex: 40,
-              backdropFilter: "blur(12px)",
-              background: "rgba(244, 246, 251, 0.85)"
+              backdropFilter: "blur(14px)",
+              background: "rgba(255, 255, 255, 0.92)"
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0 }}>

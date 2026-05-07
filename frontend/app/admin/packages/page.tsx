@@ -1,10 +1,23 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiBaseUrl, clearAdminSession, formatRupiah, withCredentials } from "../../../lib/api";
 import { useIsMobile } from "../../../lib/hooks/useIsMobile";
 import ActionDialog from "../../../components/ui/action-dialog";
+import {
+  AdminAlert,
+  AdminButton,
+  AdminCard,
+  AdminEmptyState,
+  AdminInput,
+  AdminPageHeader,
+  AdminPagination,
+  AdminSectionHeader,
+  StatTile,
+  StatusBadge,
+  adminTokens
+} from "../../../components/admin/ui";
 
 type PackageItem = {
   id: string;
@@ -51,135 +64,17 @@ const emptyVoucherForm = {
   isActive: true
 };
 
-const styles = {
-  card: {
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "16px",
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)"
-  } as const,
-  title: {
-    fontSize: "18px",
-    fontWeight: 700,
-    color: "#0f172a"
-  } as const,
-  muted: {
-    color: "#64748b"
-  } as const,
-  button: {
-    border: "none",
-    borderRadius: "10px",
-    padding: "10px 16px",
-    fontWeight: 600,
-    cursor: "pointer",
-    fontSize: "13px"
-  } as const,
-  input: {
-    width: "100%",
-    height: "42px",
-    borderRadius: "10px",
-    border: "1px solid #e2e8f0",
-    background: "#f8fafc",
-    color: "#0f172a",
-    padding: "0 14px",
-    fontFamily: "inherit",
-    fontSize: "14px"
-  } as const
-};
+const PackagesIcon = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 3 4 7v10l8 4 8-4V7l-8-4Zm0 2.2 5.6 2.8L12 10.8 6.4 8 12 5.2Zm-6 4.4 5 2.5v6.5l-5-2.5V9.6Zm7 8.9v-6.5l5-2.5v6.5l-5 2.5Z" fill="currentColor" />
+  </svg>
+);
 
-function SectionHeader({
-  title,
-  subtitle,
-  action
-}: {
-  title: string;
-  subtitle?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: "12px",
-        marginBottom: "18px",
-        flexWrap: "wrap"
-      }}
-    >
-      <div>
-        <h3 style={{ ...styles.title, fontSize: "18px" }}>{title}</h3>
-        {subtitle ? <p style={{ ...styles.muted, fontSize: "13px", marginTop: "4px" }}>{subtitle}</p> : null}
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function AdminPagination({
-  page,
-  totalPages,
-  totalItems,
-  onPrevious,
-  onNext
-}: {
-  page: number;
-  totalPages: number;
-  totalItems: number;
-  onPrevious: () => void;
-  onNext: () => void;
-}) {
-  if (totalItems <= 0) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: "12px",
-        marginTop: "16px",
-        flexWrap: "wrap"
-      }}
-    >
-      <div style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>
-        Halaman {page} dari {Math.max(1, totalPages)}
-      </div>
-      <div style={{ display: "flex", gap: "8px" }}>
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={onPrevious}
-          style={{
-            ...styles.button,
-            background: "#ffffff",
-            color: "#0f172a",
-            border: "1px solid #e2e8f0",
-            opacity: page <= 1 ? 0.45 : 1
-          }}
-        >
-          Sebelumnya
-        </button>
-        <button
-          type="button"
-          disabled={page >= totalPages}
-          onClick={onNext}
-          style={{
-            ...styles.button,
-            background: "#ffffff",
-            color: "#0f172a",
-            border: "1px solid #e2e8f0",
-            opacity: page >= totalPages ? 0.45 : 1
-          }}
-        >
-          Berikutnya
-        </button>
-      </div>
-    </div>
-  );
-}
+const VoucherIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8Zm6 1v6h2V9H9Zm4 0v6h2V9h-2Z" fill="currentColor" />
+  </svg>
+);
 
 export default function AdminPackagesPage() {
   const router = useRouter();
@@ -325,12 +220,28 @@ export default function AdminPackagesPage() {
   }
 
   if (loading && !data) {
-    return <div style={{ color: "#64748b", fontWeight: 600 }}>Loading data paket...</div>;
+    return (
+      <AdminCard padding="32px">
+        <div style={{ color: adminTokens.textMuted, fontWeight: 600 }}>Memuat data paket…</div>
+      </AdminCard>
+    );
   }
 
   if (!data) {
-    return <div style={{ color: "#64748b" }}>Gagal memuat data paket.</div>;
+    return (
+      <AdminCard padding="32px">
+        <div style={{ color: adminTokens.textMuted }}>Gagal memuat data paket.</div>
+      </AdminCard>
+    );
   }
+
+  const activePackages = data.packages.filter((pkg) => pkg.isActive).length;
+  const activeVouchers = data.vouchers.filter((voucher) => voucher.isActive).length;
+  const messageTone = message
+    ? message.toLowerCase().includes("berhasil")
+      ? "success"
+      : "danger"
+    : "neutral";
 
   return (
     <div style={{ display: "grid", gap: "20px" }}>
@@ -354,51 +265,87 @@ export default function AdminPackagesPage() {
         }}
       />
 
-      {message ? (
+      <AdminPageHeader
+        eyebrow="Modul Paket & Voucher"
+        title="Kelola Paket Harga"
+        subtitle="Atur paket layanan, batas ukuran file, dan voucher diskon yang tampil di halaman publik."
+        icon={PackagesIcon}
+      >
         <div
           style={{
-            padding: "12px 16px",
-            borderRadius: "12px",
-            background: message.includes("berhasil") ? "#dcfce7" : "#fef2f2",
-            border: message.includes("berhasil") ? "1px solid #bbf7d0" : "1px solid #fecaca",
-            color: message.includes("berhasil") ? "#166534" : "#991b1b",
-            fontWeight: 600,
-            fontSize: "14px"
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: "12px"
           }}
         >
-          {message}
+          <StatTile
+            label="Total Paket"
+            value={data.packagesPagination.totalItems.toString()}
+            hint={`${activePackages} aktif sekarang`}
+            tone="brand"
+          />
+          <StatTile
+            label="Total Voucher"
+            value={data.vouchersPagination.totalItems.toString()}
+            hint={`${activeVouchers} aktif sekarang`}
+            tone="violet"
+          />
+          <StatTile
+            label="Paket Termurah"
+            value={
+              data.packages.length > 0
+                ? formatRupiah(Math.min(...data.packages.map((pkg) => pkg.price)))
+                : "—"
+            }
+            hint="Harga termurah aktif/non-aktif"
+            tone="success"
+          />
+          <StatTile
+            label="Diskon Maksimum"
+            value={
+              data.vouchers.length > 0
+                ? `${Math.max(...data.vouchers.map((voucher) => voucher.discountPercent))}%`
+                : "—"
+            }
+            hint="Persentase diskon tertinggi"
+            tone="warning"
+          />
         </div>
-      ) : null}
+      </AdminPageHeader>
+
+      {message ? <AdminAlert tone={messageTone}>{message}</AdminAlert> : null}
 
       <section
         style={{
           display: "grid",
           gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
-          gap: "18px",
+          gap: "20px",
           alignItems: "stretch"
         }}
       >
-        <article style={{ ...styles.card, padding: isMobile ? "16px" : "20px", height: "100%" }}>
-          <SectionHeader
-            title="Kelola Paket Harga"
-            subtitle="Atur daftar paket yang tampil di halaman publik."
-            action={
-              <button
-                type="button"
+        <AdminCard padding={isMobile ? "16px" : "22px"}>
+          <AdminSectionHeader
+            title="Daftar Paket"
+            subtitle="Kelola paket harga dan limit ukuran file."
+            icon={
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M12 3 4 7v10l8 4 8-4V7l-8-4Zm-1 4.4 5-2.5L12 5.2 8 7.4 11 7.4Z"
+                  fill="currentColor"
+                />
+              </svg>
+            }
+            actions={
+              <AdminButton
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setEditingPackageId(null);
                   setPackageForm(emptyPackageForm);
                 }}
-                style={{
-                  ...styles.button,
-                  background: "#eff6ff",
-                  color: "#2563eb",
-                  border: "1px solid #dbeafe",
-                  width: isMobile ? "100%" : "auto"
-                }}
               >
                 + Paket Baru
-              </button>
+              </AdminButton>
             }
           />
 
@@ -406,125 +353,185 @@ export default function AdminPackagesPage() {
             onSubmit={handlePackageSubmit}
             style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.4fr) repeat(2, minmax(100px, 0.7fr)) minmax(100px, auto)",
-              gap: "10px",
-              marginBottom: "14px",
-              alignItems: "end"
+              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.4fr) repeat(2, minmax(120px, 0.8fr))",
+              gap: "12px",
+              marginBottom: "12px"
             }}
           >
-            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
-              Nama Paket
-              <input value={packageForm.name} onChange={(e) => setPackageForm((prev) => ({ ...prev, name: e.target.value }))} style={styles.input} />
-            </label>
-            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
-              Maks MB
-              <input type="number" value={packageForm.maxFileSizeMb} onChange={(e) => setPackageForm((prev) => ({ ...prev, maxFileSizeMb: Number(e.target.value) }))} style={styles.input} />
-            </label>
-            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
-              Harga
-              <input type="number" value={packageForm.price} onChange={(e) => setPackageForm((prev) => ({ ...prev, price: Number(e.target.value) }))} style={styles.input} />
-            </label>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{
-                ...styles.button,
-                height: "42px",
-                background: "#2563eb",
-                color: "#ffffff",
-                opacity: saving ? 0.7 : 1,
-                width: isMobile ? "100%" : "auto"
-              }}
-            >
-              {editingPackageId ? "Simpan" : "Tambah"}
-            </button>
+            <AdminInput
+              label="Nama Paket"
+              placeholder="Contoh: Paket Reguler"
+              value={packageForm.name}
+              onChange={(e) => setPackageForm((prev) => ({ ...prev, name: e.target.value }))}
+            />
+            <AdminInput
+              label="Maks MB"
+              type="number"
+              min={0}
+              value={packageForm.maxFileSizeMb}
+              onChange={(e) => setPackageForm((prev) => ({ ...prev, maxFileSizeMb: Number(e.target.value) }))}
+            />
+            <AdminInput
+              label="Harga"
+              type="number"
+              min={0}
+              value={packageForm.price}
+              onChange={(e) => setPackageForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
+            />
           </form>
 
-          <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#334155", fontWeight: 600, marginBottom: "16px", fontSize: "14px" }}>
-            <input type="checkbox" checked={packageForm.isActive} onChange={(e) => setPackageForm((prev) => ({ ...prev, isActive: e.target.checked }))} />
-            Paket aktif
-          </label>
-
-          <div style={{ display: "grid", gap: "10px" }}>
-            {data.packages.map((pkg) => (
-              <div
-                key={pkg.id}
-                style={{
-                  borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
-                  background: "#f8fafc",
-                  padding: "14px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: isMobile ? "stretch" : "center",
-                  gap: "12px",
-                  flexDirection: isMobile ? "column" : "row"
-                }}
-              >
-                <div>
-                  <div style={{ color: "#0f172a", fontWeight: 700 }}>{pkg.name}</div>
-                  <div style={{ color: "#64748b", fontSize: "13px", marginTop: "2px" }}>
-                    Maks {pkg.maxFileSizeMb} MB • {formatRupiah(pkg.price)} • {pkg.isActive ? "Aktif" : "Nonaktif"}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingPackageId(pkg.id);
-                      setPackageForm({
-                        name: pkg.name,
-                        maxFileSizeMb: pkg.maxFileSizeMb,
-                        price: pkg.price,
-                        isActive: pkg.isActive
-                      });
-                    }}
-                    style={{ ...styles.button, background: "#eff6ff", color: "#2563eb" }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget({ type: "packages", id: pkg.id, label: pkg.name })}
-                    style={{ ...styles.button, background: "#fef2f2", color: "#dc2626" }}
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: isMobile ? "stretch" : "center",
+              justifyContent: "space-between",
+              marginBottom: "16px"
+            }}
+          >
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                color: adminTokens.textSecondary,
+                fontWeight: 600,
+                fontSize: "13px"
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={packageForm.isActive}
+                onChange={(e) => setPackageForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+                style={{ accentColor: adminTokens.brand }}
+              />
+              Paket aktif & tampil ke publik
+            </label>
+            <AdminButton
+              type="submit"
+              onClick={(e) => handlePackageSubmit(e as unknown as React.FormEvent)}
+              disabled={saving}
+              fullWidth={isMobile}
+            >
+              {editingPackageId ? "Simpan perubahan" : "Tambah paket"}
+            </AdminButton>
           </div>
 
-          <AdminPagination
-            page={data.packagesPagination.page}
-            totalPages={data.packagesPagination.totalPages}
-            totalItems={data.packagesPagination.totalItems}
-            onPrevious={() => void fetchData(Math.max(1, data.packagesPagination.page - 1), voucherPage)}
-            onNext={() => void fetchData(Math.min(data.packagesPagination.totalPages, data.packagesPagination.page + 1), voucherPage)}
-          />
-        </article>
+          <div style={{ display: "grid", gap: "10px" }}>
+            {data.packages.length === 0 ? (
+              <AdminEmptyState
+                title="Belum ada paket"
+                description="Tambahkan paket pertama agar muncul di halaman harga publik."
+              />
+            ) : (
+              data.packages.map((pkg) => (
+                <div
+                  key={pkg.id}
+                  style={{
+                    borderRadius: "14px",
+                    border: `1px solid ${adminTokens.border}`,
+                    background: adminTokens.surfaceMuted,
+                    padding: "14px 16px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: isMobile ? "stretch" : "center",
+                    gap: "12px",
+                    flexDirection: isMobile ? "column" : "row"
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        flexWrap: "wrap"
+                      }}
+                    >
+                      <span style={{ color: adminTokens.textPrimary, fontWeight: 700, fontSize: "14px" }}>{pkg.name}</span>
+                      <StatusBadge tone={pkg.isActive ? "success" : "neutral"} size="sm">
+                        {pkg.isActive ? "Aktif" : "Nonaktif"}
+                      </StatusBadge>
+                    </div>
+                    <div
+                      style={{
+                        color: adminTokens.textMuted,
+                        fontSize: "12.5px",
+                        marginTop: "4px",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "10px"
+                      }}
+                    >
+                      <span>Maks {pkg.maxFileSizeMb} MB</span>
+                      <span style={{ color: adminTokens.borderSoft }}>•</span>
+                      <span style={{ color: adminTokens.brand, fontWeight: 700 }}>{formatRupiah(pkg.price)}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <AdminButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setEditingPackageId(pkg.id);
+                        setPackageForm({
+                          name: pkg.name,
+                          maxFileSizeMb: pkg.maxFileSizeMb,
+                          price: pkg.price,
+                          isActive: pkg.isActive
+                        });
+                      }}
+                    >
+                      Edit
+                    </AdminButton>
+                    <AdminButton
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setDeleteTarget({ type: "packages", id: pkg.id, label: pkg.name })}
+                    >
+                      Hapus
+                    </AdminButton>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
-        <article style={{ ...styles.card, padding: isMobile ? "16px" : "20px", height: "100%" }}>
-          <SectionHeader
+          <div style={{ marginTop: "12px" }}>
+            <AdminPagination
+              page={data.packagesPagination.page}
+              totalPages={data.packagesPagination.totalPages}
+              totalItems={data.packagesPagination.totalItems}
+              onPrevious={() => void fetchData(Math.max(1, data.packagesPagination.page - 1), voucherPage)}
+              onNext={() =>
+                void fetchData(
+                  Math.min(data.packagesPagination.totalPages, data.packagesPagination.page + 1),
+                  voucherPage
+                )
+              }
+              itemLabel="paket"
+            />
+          </div>
+        </AdminCard>
+
+        <AdminCard padding={isMobile ? "16px" : "22px"}>
+          <AdminSectionHeader
             title="Voucher Diskon"
-            subtitle="Kelola kode promo untuk user. Voucher affiliate yang nonaktif dibersihkan otomatis."
-            action={
-              <button
-                type="button"
+            subtitle="Kelola kode promo manual. Voucher affiliate yang nonaktif dibersihkan otomatis."
+            icon={VoucherIcon}
+            actions={
+              <AdminButton
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setEditingVoucherId(null);
                   setVoucherForm(emptyVoucherForm);
                 }}
-                style={{
-                  ...styles.button,
-                  background: "#f5f3ff",
-                  color: "#7c3aed",
-                  border: "1px solid #ede9fe",
-                  width: isMobile ? "100%" : "auto"
-                }}
+                style={{ background: "#f5f3ff", color: adminTokens.violet, borderColor: "#ede9fe" }}
               >
                 + Voucher Baru
-              </button>
+              </AdminButton>
             }
           />
 
@@ -532,97 +539,169 @@ export default function AdminPackagesPage() {
             onSubmit={handleVoucherSubmit}
             style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) minmax(100px, 0.75fr)",
-              gap: "10px",
-              alignItems: "end"
+              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.5fr) minmax(120px, 0.7fr)",
+              gap: "12px",
+              marginBottom: "12px"
             }}
           >
-            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
-              Kode Voucher
-              <input value={voucherForm.code} onChange={(e) => setVoucherForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))} style={styles.input} />
-            </label>
-            <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
-              Diskon %
-              <input type="number" value={voucherForm.discountPercent} onChange={(e) => setVoucherForm((prev) => ({ ...prev, discountPercent: Number(e.target.value) }))} style={styles.input} />
-            </label>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{
-                ...styles.button,
-                background: "#7c3aed",
-                color: "#ffffff",
-                gridColumn: isMobile ? "auto" : "1 / -1",
-                opacity: saving ? 0.7 : 1,
-                width: "100%"
-              }}
-            >
-              {editingVoucherId ? "Simpan Voucher" : "Tambah Voucher"}
-            </button>
+            <AdminInput
+              label="Kode Voucher"
+              placeholder="HEMAT10"
+              value={voucherForm.code}
+              onChange={(e) => setVoucherForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
+            />
+            <AdminInput
+              label="Diskon %"
+              type="number"
+              min={0}
+              max={100}
+              value={voucherForm.discountPercent}
+              onChange={(e) => setVoucherForm((prev) => ({ ...prev, discountPercent: Number(e.target.value) }))}
+            />
           </form>
 
-          <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#334155", fontWeight: 600, margin: "14px 0 16px", fontSize: "14px" }}>
-            <input type="checkbox" checked={voucherForm.isActive} onChange={(e) => setVoucherForm((prev) => ({ ...prev, isActive: e.target.checked }))} />
-            Voucher aktif
-          </label>
-
-          <div style={{ display: "grid", gap: "10px" }}>
-            {data.vouchers.map((voucher) => (
-              <div
-                key={voucher.id}
-                style={{
-                  borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
-                  background: "#f8fafc",
-                  padding: "14px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: isMobile ? "stretch" : "center",
-                  gap: "12px",
-                  flexDirection: isMobile ? "column" : "row"
-                }}
-              >
-                <div>
-                  <div style={{ color: "#0f172a", fontWeight: 700 }}>{voucher.code}</div>
-                  <div style={{ color: "#64748b", fontSize: "13px", marginTop: "2px" }}>
-                    Diskon {voucher.discountPercent}% • {voucher.isActive ? "Aktif" : "Nonaktif"}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingVoucherId(voucher.id);
-                      setVoucherForm({
-                        code: voucher.code,
-                        discountPercent: voucher.discountPercent,
-                        isActive: voucher.isActive
-                      });
-                    }}
-                    style={{ ...styles.button, background: "#eff6ff", color: "#2563eb" }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget({ type: "vouchers", id: voucher.id, label: voucher.code })}
-                    style={{ ...styles.button, background: "#fef2f2", color: "#dc2626" }}
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: isMobile ? "stretch" : "center",
+              justifyContent: "space-between",
+              marginBottom: "16px"
+            }}
+          >
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                color: adminTokens.textSecondary,
+                fontWeight: 600,
+                fontSize: "13px"
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={voucherForm.isActive}
+                onChange={(e) => setVoucherForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+                style={{ accentColor: adminTokens.violet }}
+              />
+              Voucher aktif
+            </label>
+            <AdminButton
+              type="submit"
+              onClick={(e) => handleVoucherSubmit(e as unknown as React.FormEvent)}
+              disabled={saving}
+              variant="violet"
+              fullWidth={isMobile}
+            >
+              {editingVoucherId ? "Simpan voucher" : "Tambah voucher"}
+            </AdminButton>
           </div>
 
-          <AdminPagination
-            page={data.vouchersPagination.page}
-            totalPages={data.vouchersPagination.totalPages}
-            totalItems={data.vouchersPagination.totalItems}
-            onPrevious={() => void fetchData(packagePage, Math.max(1, data.vouchersPagination.page - 1))}
-            onNext={() => void fetchData(packagePage, Math.min(data.vouchersPagination.totalPages, data.vouchersPagination.page + 1))}
-          />
-        </article>
+          <div style={{ display: "grid", gap: "10px" }}>
+            {data.vouchers.length === 0 ? (
+              <AdminEmptyState
+                title="Belum ada voucher"
+                description="Tambahkan kode promo agar bisa dipakai user di halaman pembayaran."
+              />
+            ) : (
+              data.vouchers.map((voucher) => (
+                <div
+                  key={voucher.id}
+                  style={{
+                    borderRadius: "14px",
+                    border: `1px solid ${adminTokens.border}`,
+                    background: adminTokens.surfaceMuted,
+                    padding: "14px 16px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: isMobile ? "stretch" : "center",
+                    gap: "12px",
+                    flexDirection: isMobile ? "column" : "row"
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        flexWrap: "wrap"
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "monospace",
+                          fontWeight: 800,
+                          fontSize: "14px",
+                          color: adminTokens.violet,
+                          background: "#f5f3ff",
+                          border: "1px dashed #c4b5fd",
+                          borderRadius: "8px",
+                          padding: "2px 10px"
+                        }}
+                      >
+                        {voucher.code}
+                      </span>
+                      <StatusBadge tone={voucher.isActive ? "success" : "neutral"} size="sm">
+                        {voucher.isActive ? "Aktif" : "Nonaktif"}
+                      </StatusBadge>
+                    </div>
+                    <div
+                      style={{
+                        color: adminTokens.textMuted,
+                        fontSize: "12.5px",
+                        marginTop: "4px"
+                      }}
+                    >
+                      Potongan harga {voucher.discountPercent}%
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <AdminButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setEditingVoucherId(voucher.id);
+                        setVoucherForm({
+                          code: voucher.code,
+                          discountPercent: voucher.discountPercent,
+                          isActive: voucher.isActive
+                        });
+                      }}
+                    >
+                      Edit
+                    </AdminButton>
+                    <AdminButton
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setDeleteTarget({ type: "vouchers", id: voucher.id, label: voucher.code })}
+                    >
+                      Hapus
+                    </AdminButton>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div style={{ marginTop: "12px" }}>
+            <AdminPagination
+              page={data.vouchersPagination.page}
+              totalPages={data.vouchersPagination.totalPages}
+              totalItems={data.vouchersPagination.totalItems}
+              onPrevious={() => void fetchData(packagePage, Math.max(1, data.vouchersPagination.page - 1))}
+              onNext={() =>
+                void fetchData(
+                  packagePage,
+                  Math.min(data.vouchersPagination.totalPages, data.vouchersPagination.page + 1)
+                )
+              }
+              itemLabel="voucher"
+            />
+          </div>
+        </AdminCard>
       </section>
     </div>
   );
