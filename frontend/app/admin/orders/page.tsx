@@ -1,10 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiBaseUrl, clearAdminSession, formatRupiah, withCredentials, withSessionRole } from "../../../lib/api";
+import { useEffect, useMemo, useState } from "react";
+import { apiBaseUrl, clearAdminSession, formatRupiah, withCredentials } from "../../../lib/api";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "../../../lib/hooks/useIsMobile";
 import ActionDialog from "../../../components/ui/action-dialog";
+import {
+  AdminAlert,
+  AdminButton,
+  AdminCard,
+  AdminEmptyState,
+  AdminPageHeader,
+  AdminPagination,
+  AdminSelect,
+  AdminTableShell,
+  StatTile,
+  StatusBadge,
+  adminTableStyles,
+  adminTokens,
+  type AdminTone
+} from "../../../components/admin/ui";
 
 type OrderItem = {
   id: string;
@@ -55,6 +70,65 @@ type OrdersPayload = {
   };
 };
 
+const PAYMENT_TONE: Record<string, AdminTone> = {
+  PAID: "success",
+  PENDING: "warning",
+  FAILED: "danger"
+};
+
+const CHECK_TONE: Record<string, AdminTone> = {
+  COMPLETED: "success",
+  PROCESSING: "brand",
+  FAILED: "danger",
+  PAID: "violet",
+  WAITING_PAYMENT: "neutral"
+};
+
+function paymentTone(status: string): AdminTone {
+  return PAYMENT_TONE[status] ?? "neutral";
+}
+
+function checkTone(status: string): AdminTone {
+  return CHECK_TONE[status] ?? "neutral";
+}
+
+const AVATAR_PALETTE: Array<[string, string]> = [
+  ["#dbeafe", "#1d4ed8"],
+  ["#fef3c7", "#b45309"],
+  ["#dcfce7", "#15803d"],
+  ["#fae8ff", "#a21caf"],
+  ["#fee2e2", "#b91c1c"],
+  ["#e0e7ff", "#4338ca"]
+];
+
+function pickPalette(seed: string): [string, string] {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "?";
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+const OrdersIcon = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M7 4h10l2 4v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8l2-4Zm0 4v10h10V8H7Zm2-2-.5 1h7L15 6H9Zm1 5h4v2h-4v-2Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 export default function AdminOrdersPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -67,11 +141,6 @@ export default function AdminOrdersPage() {
   const [retryingOrderId, setRetryingOrderId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalItems: 0, totalPages: 1 });
-  const surface = "#ffffff";
-  const innerSurface = "#f8fafc";
-  const borderColor = "#e2e8f0";
-  const textPrimary = "#0f172a";
-  const textMuted = "#64748b";
 
   function canRetryOrder(order: OrderItem) {
     return order.paymentStatus === "PAID" && (order.checkStatus === "PAID" || order.checkStatus === "FAILED");
@@ -81,19 +150,15 @@ export default function AdminOrdersPage() {
     if (order.paymentStatus !== "PAID") {
       return "Order belum lunas, jadi belum bisa diproses ulang.";
     }
-
     if (order.checkStatus === "PROCESSING") {
       return "Dokumen sedang diproses, jadi belum bisa dikirim ulang.";
     }
-
     if (order.checkStatus === "COMPLETED") {
       return "Dokumen sudah selesai diproses.";
     }
-
     if (order.checkStatus !== "PAID" && order.checkStatus !== "FAILED") {
       return "Tombol ini aktif untuk status cek PAID atau FAILED.";
     }
-
     return "";
   }
 
@@ -105,9 +170,7 @@ export default function AdminOrdersPage() {
       const res = await fetch(`${apiBaseUrl}/api/admin/orders/${order.id}/process`, {
         ...withCredentials(),
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({})
       });
 
@@ -118,11 +181,9 @@ export default function AdminOrdersPage() {
         router.replace("/admin/login");
         return;
       }
-
       if (res.status === 403) {
         throw new Error(payload.message || "Anda tidak berhak memproses request ini.");
       }
-
       if (!res.ok) {
         throw new Error(payload.message || "Gagal mengirim ulang request pemrosesan.");
       }
@@ -151,7 +212,7 @@ export default function AdminOrdersPage() {
       if (filterPayment) query.append("payment", filterPayment);
       query.append("page", String(nextPage));
       query.append("limit", "10");
-      
+
       const res = await fetch(`${apiBaseUrl}/api/admin/orders?${query.toString()}`, {
         ...withCredentials()
       });
@@ -161,7 +222,6 @@ export default function AdminOrdersPage() {
         router.replace("/admin/login");
         return;
       }
-
       if (res.status === 403) {
         throw new Error(json.message || "Akses admin ditolak.");
       }
@@ -184,8 +244,22 @@ export default function AdminOrdersPage() {
     void fetchOrders(1);
   }, [filterStatus, filterPayment]);
 
+  const stats = useMemo(() => {
+    const paid = orders.filter((order) => order.paymentStatus === "PAID").length;
+    const completed = orders.filter((order) => order.checkStatus === "COMPLETED").length;
+    const processing = orders.filter((order) => order.checkStatus === "PROCESSING").length;
+    const failed = orders.filter((order) => order.checkStatus === "FAILED").length;
+    return { paid, completed, processing, failed };
+  }, [orders]);
+
+  const noticeTone: AdminTone = notice
+    ? notice.toLowerCase().includes("berhasil")
+      ? "success"
+      : "danger"
+    : "neutral";
+
   return (
-    <div>
+    <div style={{ display: "grid", gap: "20px" }}>
       <ActionDialog
         open={Boolean(selectedOrder)}
         title={selectedOrder ? `Detail Order ${selectedOrder.publicId}` : "Detail Order"}
@@ -195,7 +269,13 @@ export default function AdminOrdersPage() {
       >
         {selectedOrder ? (
           <div style={{ display: "grid", gap: isMobile ? "14px" : "18px", minWidth: 0 }}>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "14px" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                gap: "10px"
+              }}
+            >
               {[
                 ["Invoice", selectedOrder.payments[0]?.providerRef || "-"],
                 ["Public ID", selectedOrder.publicId],
@@ -204,72 +284,156 @@ export default function AdminOrdersPage() {
                 ["Dokumen", selectedOrder.originalName],
                 ["Paket", selectedOrder.package.name]
               ].map(([label, value]) => (
-                <div key={label} style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "12px 14px", minWidth: 0 }}>
-                  <div style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", color: textMuted, textTransform: "uppercase", marginBottom: "4px" }}>{label}</div>
-                  <div style={{ fontSize: "14px", lineHeight: 1.6, color: textPrimary, fontWeight: 600, overflowWrap: "anywhere" }}>{value}</div>
+                <div
+                  key={label}
+                  style={{
+                    background: adminTokens.surfaceMuted,
+                    border: `1px solid ${adminTokens.border}`,
+                    borderRadius: "12px",
+                    padding: "12px 14px",
+                    minWidth: 0
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      letterSpacing: "0.06em",
+                      color: adminTokens.textSubtle,
+                      textTransform: "uppercase",
+                      marginBottom: "4px"
+                    }}
+                  >
+                    {label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13.5px",
+                      lineHeight: 1.55,
+                      color: adminTokens.textPrimary,
+                      fontWeight: 600,
+                      overflowWrap: "anywhere"
+                    }}
+                  >
+                    {value}
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: "14px" }}>
-              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "14px", minWidth: 0 }}>
-                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600, marginBottom: "4px" }}>Pembayaran</div>
-                <div style={{ fontSize: "18px", fontWeight: 800, color: "#059669", overflowWrap: "anywhere" }}>{selectedOrder.paymentStatus}</div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+                gap: "10px"
+              }}
+            >
+              <div
+                style={{
+                  background: adminTokens.surfaceMuted,
+                  border: `1px solid ${adminTokens.border}`,
+                  borderRadius: "12px",
+                  padding: "14px",
+                  minWidth: 0
+                }}
+              >
+                <div style={{ fontSize: "11px", color: adminTokens.textMuted, fontWeight: 700, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Pembayaran
+                </div>
+                <StatusBadge tone={paymentTone(selectedOrder.paymentStatus)}>{selectedOrder.paymentStatus}</StatusBadge>
               </div>
-              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "14px", minWidth: 0 }}>
-                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600, marginBottom: "4px" }}>Status Cek</div>
-                <div style={{ fontSize: "18px", fontWeight: 800, color: textPrimary, overflowWrap: "anywhere" }}>{selectedOrder.checkStatus}</div>
+              <div
+                style={{
+                  background: adminTokens.surfaceMuted,
+                  border: `1px solid ${adminTokens.border}`,
+                  borderRadius: "12px",
+                  padding: "14px",
+                  minWidth: 0
+                }}
+              >
+                <div style={{ fontSize: "11px", color: adminTokens.textMuted, fontWeight: 700, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Status Cek
+                </div>
+                <StatusBadge tone={checkTone(selectedOrder.checkStatus)}>{selectedOrder.checkStatus}</StatusBadge>
               </div>
-              <div style={{ background: innerSurface, border: `1px solid ${borderColor}`, borderRadius: "12px", padding: "14px", minWidth: 0 }}>
-                <div style={{ fontSize: "12px", color: textMuted, fontWeight: 600, marginBottom: "4px" }}>Nominal Final</div>
-                <div style={{ fontSize: "18px", fontWeight: 800, color: "#2563eb", overflowWrap: "anywhere" }}>{formatRupiah(selectedOrder.finalAmount || selectedOrder.package.price)}</div>
+              <div
+                style={{
+                  background: adminTokens.surfaceMuted,
+                  border: `1px solid ${adminTokens.border}`,
+                  borderRadius: "12px",
+                  padding: "14px",
+                  minWidth: 0
+                }}
+              >
+                <div style={{ fontSize: "11px", color: adminTokens.textMuted, fontWeight: 700, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Nominal Final
+                </div>
+                <div style={{ fontSize: "16px", fontWeight: 800, color: adminTokens.brand, overflowWrap: "anywhere" }}>
+                  {formatRupiah(selectedOrder.finalAmount || selectedOrder.package.price)}
+                </div>
               </div>
             </div>
 
-            <div style={{ border: `1px solid ${borderColor}`, background: innerSurface, borderRadius: "12px", padding: "14px", minWidth: 0 }}>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: textMuted, marginBottom: "8px" }}>Catatan Hasil</div>
-              <div style={{ color: "#334155", lineHeight: 1.7, fontSize: "14px" }}>
+            <div
+              style={{
+                border: `1px solid ${adminTokens.border}`,
+                background: adminTokens.surfaceMuted,
+                borderRadius: "12px",
+                padding: "14px",
+                minWidth: 0
+              }}
+            >
+              <div style={{ fontSize: "12px", fontWeight: 700, color: adminTokens.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Catatan Hasil
+              </div>
+              <div style={{ color: adminTokens.textSecondary, lineHeight: 1.7, fontSize: "13.5px" }}>
                 {selectedOrder.resultSummary || "Belum ada ringkasan hasil. Order mungkin masih menunggu pembayaran atau proses pengecekan."}
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" }}>
-              <button
-                type="button"
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                flexWrap: "wrap",
+                flexDirection: isMobile ? "column" : "row"
+              }}
+            >
+              <AdminButton
+                variant="secondary"
+                fullWidth={isMobile}
                 onClick={async () => {
                   await navigator.clipboard.writeText(selectedOrder.publicId);
                   setNotice(`Public ID ${selectedOrder.publicId} berhasil disalin.`);
                 }}
-                style={{ width: isMobile ? "100%" : "auto", padding: "10px 16px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: innerSurface, color: textPrimary, fontWeight: 600, cursor: "pointer", fontSize: "13px" }}
               >
                 Salin Public ID
-              </button>
-              <button
-                type="button"
+              </AdminButton>
+              <AdminButton
+                variant="primary"
                 onClick={() => void retryOrder(selectedOrder)}
                 disabled={retryingOrderId === selectedOrder.id || !canRetryOrder(selectedOrder)}
                 title={canRetryOrder(selectedOrder) ? "Kirim ulang dokumen ke proses checker" : getRetryBlockedReason(selectedOrder)}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "10px",
-                  border: "none",
-                  background: canRetryOrder(selectedOrder) ? "#2563eb" : "#e2e8f0",
-                  color: canRetryOrder(selectedOrder) ? "#ffffff" : "#94a3b8",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  cursor: retryingOrderId === selectedOrder.id || !canRetryOrder(selectedOrder) ? "not-allowed" : "pointer",
-                  opacity: retryingOrderId === selectedOrder.id ? 0.7 : 1,
-                  width: isMobile ? "100%" : "auto"
-                }}
+                fullWidth={isMobile}
               >
-                {retryingOrderId === selectedOrder.id ? "Mengirim Ulang..." : "Proses Ulang Dokumen"}
-              </button>
+                {retryingOrderId === selectedOrder.id ? "Mengirim Ulang…" : "Proses Ulang Dokumen"}
+              </AdminButton>
               {selectedOrder.resultReportUrl ? (
                 <a
                   href={selectedOrder.resultReportUrl}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ width: isMobile ? "100%" : "auto", textAlign: "center", padding: "10px 16px", borderRadius: "10px", background: "#059669", color: "#ffffff", fontWeight: 600, fontSize: "13px", textDecoration: "none" }}
+                  style={{
+                    width: isMobile ? "100%" : "auto",
+                    textAlign: "center",
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    background: adminTokens.success,
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    textDecoration: "none"
+                  }}
                 >
                   Buka Report
                 </a>
@@ -279,346 +443,358 @@ export default function AdminOrdersPage() {
                   href={selectedOrder.payments[0].qrUrl || "#"}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ width: isMobile ? "100%" : "auto", textAlign: "center", padding: "10px 16px", borderRadius: "10px", background: "#f1f5f9", color: "#334155", fontWeight: 600, fontSize: "13px", textDecoration: "none", border: `1px solid ${borderColor}` }}
+                  style={{
+                    width: isMobile ? "100%" : "auto",
+                    textAlign: "center",
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    background: adminTokens.surface,
+                    color: adminTokens.textPrimary,
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    textDecoration: "none",
+                    border: `1px solid ${adminTokens.border}`
+                  }}
                 >
                   Lihat QR Payment
                 </a>
               ) : null}
             </div>
             {!canRetryOrder(selectedOrder) ? (
-              <div style={{ borderRadius: "10px", background: "#fef3c7", border: "1px solid #fde68a", padding: "12px 14px", color: "#92400e", fontSize: "13px", fontWeight: 600 }}>
+              <AdminAlert tone="warning" title="Tidak bisa diproses ulang">
                 {getRetryBlockedReason(selectedOrder)}
-              </div>
+              </AdminAlert>
             ) : null}
           </div>
         ) : null}
       </ActionDialog>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", marginBottom: "24px", gap: "16px", flexDirection: isMobile ? "column" : "row" }}>
-        <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 800, color: textPrimary }}>Daftar Pesanan</h1>
-          <p style={{ color: textMuted, fontSize: "14px", marginTop: "4px" }}>Kelola semua transaksi dan proses pengecekan.</p>
-        </div>
-        
-        <div style={{ display: "flex", gap: "10px", width: isMobile ? "100%" : "auto", flexDirection: isMobile ? "column" : "row" }}>
-          <select 
-            value={filterPayment}
-            onChange={(e) => setFilterPayment(e.target.value)}
-            style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 500, width: isMobile ? "100%" : "auto", fontSize: "13px" }}
+      <AdminPageHeader
+        eyebrow="Modul Pesanan"
+        title="Daftar Pesanan"
+        subtitle="Kelola transaksi user, status pembayaran, dan kirim ulang dokumen ke pipeline pengecekan."
+        icon={OrdersIcon}
+        actions={
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+              flexDirection: isMobile ? "column" : "row",
+              width: isMobile ? "100%" : "auto"
+            }}
           >
-            <option value="">Semua Pembayaran</option>
-            <option value="PAID">Lunas</option>
-            <option value="PENDING">Pending</option>
-            <option value="FAILED">Gagal</option>
-          </select>
-
-          <select 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 500, width: isMobile ? "100%" : "auto", fontSize: "13px" }}
-          >
-            <option value="">Semua Status Cek</option>
-            <option value="WAITING_PAYMENT">Menunggu Bayar</option>
-            <option value="PAID">Siap Proses</option>
-            <option value="PROCESSING">Diproses</option>
-            <option value="FAILED">Gagal</option>
-            <option value="COMPLETED">Selesai</option>
-          </select>
+            <AdminSelect
+              value={filterPayment}
+              onChange={(e) => setFilterPayment(e.target.value)}
+              containerStyle={{ minWidth: isMobile ? "auto" : "180px" }}
+            >
+              <option value="">Semua Pembayaran</option>
+              <option value="PAID">Lunas</option>
+              <option value="PENDING">Pending</option>
+              <option value="FAILED">Gagal</option>
+            </AdminSelect>
+            <AdminSelect
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              containerStyle={{ minWidth: isMobile ? "auto" : "180px" }}
+            >
+              <option value="">Semua Status Cek</option>
+              <option value="WAITING_PAYMENT">Menunggu Bayar</option>
+              <option value="PAID">Siap Proses</option>
+              <option value="PROCESSING">Diproses</option>
+              <option value="FAILED">Gagal</option>
+              <option value="COMPLETED">Selesai</option>
+            </AdminSelect>
+          </div>
+        }
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: "12px"
+          }}
+        >
+          <StatTile label="Total di Halaman Ini" value={orders.length.toString()} hint={`Total ${pagination.totalItems} pesanan`} tone="brand" />
+          <StatTile label="Sudah Dibayar" value={stats.paid.toString()} hint="Status PAID di halaman ini" tone="success" />
+          <StatTile label="Sedang Diproses" value={stats.processing.toString()} hint="Antrean pipeline saat ini" tone="violet" />
+          <StatTile label="Gagal" value={stats.failed.toString()} hint="Perlu intervensi admin" tone="danger" />
         </div>
-      </div>
+      </AdminPageHeader>
 
-      {notice ? (
-        <div style={{ marginBottom: "16px", padding: "12px 16px", borderRadius: "12px", background: notice.includes("berhasil") ? "#dcfce7" : "#fef2f2", color: notice.includes("berhasil") ? "#166534" : "#991b1b", border: notice.includes("berhasil") ? "1px solid #bbf7d0" : "1px solid #fecaca", fontWeight: 600, fontSize: "14px" }}>
-          {notice}
-        </div>
-      ) : null}
+      {notice ? <AdminAlert tone={noticeTone}>{notice}</AdminAlert> : null}
 
-      <div style={{ background: surface, borderRadius: "16px", border: `1px solid ${borderColor}`, overflow: "hidden", boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)" }}>
-        {loading ? (
-          <div style={{ padding: "40px", textAlign: "center", color: textMuted }}>Memuat pesanan...</div>
-        ) : isMobile ? (
-          <div style={{ display: "grid", gap: "10px", padding: "12px" }}>
-            {orders.map((order) => {
-              const paymentTone =
-                order.paymentStatus === "PAID"
-                  ? { background: "#dcfce7", color: "#166534" }
-                  : { background: "#fee2e2", color: "#991b1b" };
-
-              const checkTone =
-                order.checkStatus === "COMPLETED"
-                  ? { background: "#dcfce7", color: "#166534" }
-                  : order.checkStatus === "PROCESSING"
-                    ? { background: "#dbeafe", color: "#1e40af" }
-                    : order.checkStatus === "FAILED"
-                      ? { background: "#fee2e2", color: "#991b1b" }
-                      : { background: "#f1f5f9", color: "#475569" };
-
-              return (
-                <article
-                  key={order.id}
+      {loading ? (
+        <AdminCard padding="40px">
+          <div style={{ textAlign: "center", color: adminTokens.textMuted, fontWeight: 600 }}>Memuat pesanan…</div>
+        </AdminCard>
+      ) : orders.length === 0 ? (
+        <AdminCard padding="0">
+          <AdminEmptyState
+            title="Tidak ada pesanan"
+            description="Tidak ada pesanan yang sesuai dengan filter saat ini. Coba ubah filter pembayaran atau status."
+          />
+        </AdminCard>
+      ) : isMobile ? (
+        <div style={{ display: "grid", gap: "10px" }}>
+          {orders.map((order) => {
+            const palette = pickPalette(order.user.fullName);
+            return (
+              <AdminCard key={order.id} padding="14px">
+                <div
                   style={{
-                    borderRadius: "12px",
-                    border: `1px solid ${borderColor}`,
-                    background: innerSurface,
-                    padding: "14px"
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    marginBottom: "12px"
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", marginBottom: "12px" }}>
-                    <div>
-                      <div style={{ fontWeight: 700, color: textPrimary, fontSize: "14px" }}>{order.payments[0]?.providerRef || "N/A"}</div>
-                      <div style={{ fontSize: "11px", color: textMuted, marginTop: "2px" }}>{order.id}</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedOrder(order)}
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center", minWidth: 0 }}>
+                    <div
                       style={{
-                        padding: "6px 12px",
-                        borderRadius: "8px",
-                        border: `1px solid ${borderColor}`,
-                        background: "#ffffff",
-                        color: textPrimary,
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: palette[0],
+                        color: palette[1],
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 800,
                         fontSize: "12px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap"
+                        flexShrink: 0
                       }}
                     >
-                      Detail
-                    </button>
+                      {getInitials(order.user.fullName)}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: adminTokens.textPrimary, fontSize: "13.5px" }}>
+                        {order.payments[0]?.providerRef || "N/A"}
+                      </div>
+                      <div style={{ fontSize: "11px", color: adminTokens.textMuted }}>{order.publicId}</div>
+                    </div>
+                  </div>
+                  <AdminButton size="sm" variant="secondary" onClick={() => setSelectedOrder(order)}>
+                    Detail
+                  </AdminButton>
+                </div>
+
+                <div style={{ display: "grid", gap: "10px" }}>
+                  <div>
+                    <div
+                      style={{
+                        color: adminTokens.textSubtle,
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        marginBottom: "2px",
+                        fontWeight: 700
+                      }}
+                    >
+                      Customer
+                    </div>
+                    <div style={{ color: adminTokens.textPrimary, fontWeight: 600, fontSize: "13.5px" }}>
+                      {order.user.fullName}
+                    </div>
+                    <div style={{ color: adminTokens.textMuted, fontSize: "12px", marginTop: "2px", wordBreak: "break-word" }}>
+                      {order.user.email}
+                    </div>
                   </div>
 
-                  <div style={{ display: "grid", gap: "8px" }}>
-                    <div>
-                      <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Customer</div>
-                      <div style={{ color: textPrimary, fontWeight: 600, fontSize: "14px" }}>{order.user.fullName}</div>
-                      <div style={{ color: textMuted, fontSize: "12px", marginTop: "2px", wordBreak: "break-word" }}>{order.user.email}</div>
+                  <div>
+                    <div
+                      style={{
+                        color: adminTokens.textSubtle,
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        marginBottom: "2px",
+                        fontWeight: 700
+                      }}
+                    >
+                      Dokumen & Paket
                     </div>
-
-                    <div>
-                      <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>File & Paket</div>
-                      <div style={{ color: "#334155", fontSize: "13px", lineHeight: 1.5, wordBreak: "break-word" }}>{order.originalName}</div>
-                      <div style={{ fontSize: "12px", color: "#2563eb", fontWeight: 600, marginTop: "2px" }}>{order.package.name}</div>
+                    <div style={{ color: adminTokens.textSecondary, fontSize: "13px", lineHeight: 1.5, wordBreak: "break-word" }}>
+                      {order.originalName}
                     </div>
+                    <div style={{ fontSize: "12px", color: adminTokens.brand, fontWeight: 700, marginTop: "2px" }}>
+                      {order.package.name}
+                    </div>
+                  </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                      <div>
-                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Waktu</div>
-                        <div style={{ color: "#475569", fontWeight: 500, fontSize: "12px", lineHeight: 1.4 }}>
-                          {formatWibDateTime(order.createdAt)}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div>
+                      <div
+                        style={{
+                          color: adminTokens.textSubtle,
+                          fontSize: "11px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          marginBottom: "2px",
+                          fontWeight: 700
+                        }}
+                      >
+                        Waktu
+                      </div>
+                      <div style={{ color: adminTokens.textSecondary, fontWeight: 500, fontSize: "12px", lineHeight: 1.4 }}>
+                        {formatWibDateTime(order.createdAt)}
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          color: adminTokens.textSubtle,
+                          fontSize: "11px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          marginBottom: "2px",
+                          fontWeight: 700
+                        }}
+                      >
+                        Nominal
+                      </div>
+                      <div style={{ color: adminTokens.textPrimary, fontWeight: 700 }}>{formatRupiah(order.package.price)}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <StatusBadge tone={paymentTone(order.paymentStatus)} size="sm">
+                      {order.paymentStatus}
+                    </StatusBadge>
+                    <StatusBadge tone={checkTone(order.checkStatus)} size="sm">
+                      {order.checkStatus}
+                    </StatusBadge>
+                  </div>
+
+                  <AdminButton
+                    variant={canRetryOrder(order) ? "primary" : "secondary"}
+                    onClick={() => void retryOrder(order)}
+                    disabled={retryingOrderId === order.id || !canRetryOrder(order)}
+                    title={canRetryOrder(order) ? "Kirim ulang dokumen ke proses checker" : getRetryBlockedReason(order)}
+                    fullWidth
+                  >
+                    {retryingOrderId === order.id ? "Memproses…" : "Proses Ulang"}
+                  </AdminButton>
+                </div>
+              </AdminCard>
+            );
+          })}
+        </div>
+      ) : (
+        <AdminTableShell minWidth={920}>
+          <thead>
+            <tr>
+              <th style={adminTableStyles.th}>Invoice / Customer</th>
+              <th style={adminTableStyles.th}>Dokumen & Paket</th>
+              <th style={adminTableStyles.th}>Waktu</th>
+              <th style={adminTableStyles.th}>Nominal</th>
+              <th style={adminTableStyles.th}>Pembayaran</th>
+              <th style={adminTableStyles.th}>Proses Cek</th>
+              <th style={adminTableStyles.th}>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((order) => {
+              const palette = pickPalette(order.user.fullName);
+              return (
+                <tr key={order.id} style={{ background: adminTokens.surface }}>
+                  <td style={adminTableStyles.td}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "10px",
+                          background: palette[0],
+                          color: palette[1],
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 800,
+                          fontSize: "12px",
+                          flexShrink: 0
+                        }}
+                      >
+                        {getInitials(order.user.fullName)}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: "13.5px",
+                            color: adminTokens.textPrimary
+                          }}
+                        >
+                          {order.user.fullName}
+                        </div>
+                        <div style={{ fontSize: "12px", color: adminTokens.textMuted }}>{order.user.email}</div>
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: adminTokens.textSubtle,
+                            fontFamily: "monospace",
+                            marginTop: "2px"
+                          }}
+                        >
+                          {order.payments[0]?.providerRef || "N/A"} • {order.publicId}
                         </div>
                       </div>
-                      <div>
-                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>Nominal</div>
-                        <div style={{ color: textPrimary, fontWeight: 700 }}>{formatRupiah(order.package.price)}</div>
-                      </div>
                     </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                      <div>
-                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Pembayaran</div>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            minHeight: "26px",
-                            padding: "0 8px",
-                            borderRadius: "999px",
-                            fontSize: "11px",
-                            fontWeight: 600,
-                            background: paymentTone.background,
-                            color: paymentTone.color
-                          }}
-                        >
-                          {order.paymentStatus}
-                        </span>
-                      </div>
-                      <div>
-                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Proses Cek</div>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            minHeight: "26px",
-                            padding: "0 8px",
-                            borderRadius: "999px",
-                            fontSize: "11px",
-                            fontWeight: 600,
-                            background: checkTone.background,
-                            color: checkTone.color
-                          }}
-                        >
-                          {order.checkStatus}
-                        </span>
-                      </div>
+                  </td>
+                  <td style={adminTableStyles.td}>
+                    <div style={{ fontSize: "13px", fontWeight: 500, color: adminTokens.textSecondary, wordBreak: "break-word" }}>
+                      {order.originalName}
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => void retryOrder(order)}
-                      disabled={retryingOrderId === order.id || !canRetryOrder(order)}
-                      title={canRetryOrder(order) ? "Kirim ulang dokumen ke proses checker" : getRetryBlockedReason(order)}
-                      style={{
-                        padding: "8px 12px",
-                        borderRadius: "10px",
-                        border: "none",
-                        background: canRetryOrder(order) ? "#2563eb" : "#e2e8f0",
-                        color: canRetryOrder(order) ? "#ffffff" : "#94a3b8",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                        cursor: retryingOrderId === order.id || !canRetryOrder(order) ? "not-allowed" : "pointer",
-                        opacity: retryingOrderId === order.id ? 0.7 : 1,
-                        width: "100%"
-                      }}
-                    >
-                      {retryingOrderId === order.id ? "Memproses..." : "Proses Ulang"}
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: `1px solid ${borderColor}`, background: "#f8fafc" }}>
-                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Invoice / Order ID</th>
-                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Customer</th>
-                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>File & Paket</th>
-                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Waktu Pengecekan</th>
-                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Pembayaran</th>
-                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Proses Cek</th>
-                <th style={{ padding: "14px 16px", color: "#94a3b8", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id} style={{ borderBottom: `1px solid #f1f5f9` }}>
-                  <td style={{ padding: "14px 16px" }}>
-                    <div style={{ fontWeight: 600, fontSize: "14px", color: textPrimary }}>{order.payments[0]?.providerRef || "N/A"}</div>
-                    <div style={{ fontSize: "11px", color: textMuted }}>{order.id}</div>
+                    <div style={{ fontSize: "12px", color: adminTokens.brand, fontWeight: 700, marginTop: "2px" }}>
+                      {order.package.name}
+                    </div>
                   </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <div style={{ fontWeight: 600, fontSize: "14px", color: textPrimary }}>{order.user.fullName}</div>
-                    <div style={{ fontSize: "12px", color: textMuted }}>{order.user.email}</div>
-                  </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <div style={{ fontSize: "13px", fontWeight: 500, color: "#334155" }}>{order.originalName}</div>
-                    <div style={{ fontSize: "12px", color: "#2563eb", fontWeight: 600 }}>{order.package.name}</div>
-                  </td>
-                  <td style={{ padding: "14px 16px", color: "#475569", fontWeight: 500, whiteSpace: "nowrap", fontSize: "13px" }}>
+                  <td style={{ ...adminTableStyles.td, color: adminTokens.textSecondary, fontWeight: 500, whiteSpace: "nowrap" }}>
                     {formatWibDateTime(order.createdAt)}
                   </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <div style={{ fontWeight: 700, fontSize: "14px", marginBottom: "4px", color: textPrimary }}>{formatRupiah(order.package.price)}</div>
-                    <span style={{
-                      padding: "2px 8px",
-                      borderRadius: "999px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      background: order.paymentStatus === "PAID" ? "#dcfce7" : "#fee2e2",
-                      color: order.paymentStatus === "PAID" ? "#166534" : "#991b1b"
-                    }}>
-                      {order.paymentStatus}
-                    </span>
+                  <td style={{ ...adminTableStyles.td, fontWeight: 700, color: adminTokens.textPrimary, whiteSpace: "nowrap" }}>
+                    {formatRupiah(order.package.price)}
                   </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <span style={{
-                      padding: "2px 8px",
-                      borderRadius: "999px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      background:
-                        order.checkStatus === "COMPLETED"
-                          ? "#dcfce7"
-                          : order.checkStatus === "PROCESSING"
-                            ? "#dbeafe"
-                            : order.checkStatus === "FAILED"
-                              ? "#fee2e2"
-                              : "#f1f5f9",
-                      color:
-                        order.checkStatus === "COMPLETED"
-                          ? "#166534"
-                          : order.checkStatus === "PROCESSING"
-                            ? "#1e40af"
-                            : order.checkStatus === "FAILED"
-                              ? "#991b1b"
-                              : "#64748b"
-                    }}>
-                      {order.checkStatus}
-                    </span>
+                  <td style={adminTableStyles.td}>
+                    <StatusBadge tone={paymentTone(order.paymentStatus)}>{order.paymentStatus}</StatusBadge>
                   </td>
-                  <td style={{ padding: "14px 16px" }}>
+                  <td style={adminTableStyles.td}>
+                    <StatusBadge tone={checkTone(order.checkStatus)}>{order.checkStatus}</StatusBadge>
+                  </td>
+                  <td style={adminTableStyles.td}>
                     <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                      <button style={{
-                        padding: "6px 12px",
-                        borderRadius: "8px",
-                        border: `1px solid ${borderColor}`,
-                        background: "#ffffff",
-                        color: textPrimary,
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        cursor: "pointer"
-                      }}
-                      onClick={() => setSelectedOrder(order)}
-                      >
+                      <AdminButton size="sm" variant="secondary" onClick={() => setSelectedOrder(order)}>
                         Detail
-                      </button>
-                      <button
-                        type="button"
+                      </AdminButton>
+                      <AdminButton
+                        size="sm"
+                        variant={canRetryOrder(order) ? "primary" : "secondary"}
                         onClick={() => void retryOrder(order)}
                         disabled={retryingOrderId === order.id || !canRetryOrder(order)}
                         title={canRetryOrder(order) ? "Kirim ulang dokumen ke proses checker" : getRetryBlockedReason(order)}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "8px",
-                          border: "none",
-                          background: canRetryOrder(order) ? "#2563eb" : "#e2e8f0",
-                          color: canRetryOrder(order) ? "#ffffff" : "#94a3b8",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          cursor: retryingOrderId === order.id || !canRetryOrder(order) ? "not-allowed" : "pointer",
-                          opacity: retryingOrderId === order.id ? 0.7 : 1
-                        }}
                       >
-                        {retryingOrderId === order.id ? "Memproses..." : "Proses Ulang"}
-                      </button>
+                        {retryingOrderId === order.id ? "Memproses…" : "Proses Ulang"}
+                      </AdminButton>
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {!loading && orders.length === 0 && (
-          <div style={{ padding: "60px", textAlign: "center", color: textMuted }}>
-            <p style={{ fontWeight: 600, fontSize: "15px" }}>Tidak ada pesanan yang ditemukan.</p>
-          </div>
-        )}
-      </div>
+              );
+            })}
+          </tbody>
+        </AdminTableShell>
+      )}
+
       {!loading && pagination.totalItems > 0 ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
-          <div style={{ fontSize: "13px", color: textMuted, fontWeight: 600 }}>
-            Halaman {pagination.page} dari {Math.max(1, pagination.totalPages)}
-          </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              type="button"
-              disabled={pagination.page <= 1}
-              onClick={() => void fetchOrders(Math.max(1, pagination.page - 1))}
-              style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 600, fontSize: "13px", cursor: pagination.page <= 1 ? "not-allowed" : "pointer", opacity: pagination.page <= 1 ? 0.5 : 1 }}
-            >
-              Sebelumnya
-            </button>
-            <button
-              type="button"
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => void fetchOrders(Math.min(pagination.totalPages, pagination.page + 1))}
-              style={{ padding: "8px 14px", borderRadius: "10px", border: `1px solid ${borderColor}`, background: "#ffffff", color: textPrimary, fontWeight: 600, fontSize: "13px", cursor: pagination.page >= pagination.totalPages ? "not-allowed" : "pointer", opacity: pagination.page >= pagination.totalPages ? 0.5 : 1 }}
-            >
-              Berikutnya
-            </button>
-          </div>
-        </div>
+        <AdminPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems}
+          onPrevious={() => void fetchOrders(Math.max(1, pagination.page - 1))}
+          onNext={() => void fetchOrders(Math.min(pagination.totalPages, pagination.page + 1))}
+          itemLabel="pesanan"
+        />
       ) : null}
     </div>
   );

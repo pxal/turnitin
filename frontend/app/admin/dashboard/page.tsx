@@ -39,30 +39,34 @@ const emptyBrandingForm: BrandingData = {
   whatsappUrl: ""
 };
 
-const tokens = {
+const styles = {
   card: {
     background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "20px",
-    boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -16px rgba(15, 23, 42, 0.08)"
-  } as const,
-  softCard: {
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "16px"
+    border: "1px solid #e7ecf3",
+    borderRadius: "18px",
+    boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -24px rgba(15, 23, 42, 0.18)"
   } as const,
   title: {
-    fontSize: "18px",
+    fontSize: "16px",
     fontWeight: 700,
-    color: "#0f172a"
+    color: "#0f172a",
+    letterSpacing: "-0.01em"
   } as const,
   muted: {
     color: "#64748b"
   } as const,
+  button: {
+    border: "none",
+    borderRadius: "10px",
+    padding: "10px 18px",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: "14px"
+  } as const,
   input: {
     width: "100%",
-    height: "44px",
-    borderRadius: "12px",
+    height: "42px",
+    borderRadius: "10px",
     border: "1px solid #e2e8f0",
     background: "#f8fafc",
     color: "#0f172a",
@@ -76,11 +80,13 @@ const tokens = {
 function SectionHeader({
   title,
   subtitle,
-  action
+  action,
+  eyebrow
 }: {
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  eyebrow?: string;
 }) {
   return (
     <div
@@ -89,15 +95,27 @@ function SectionHeader({
         justifyContent: "space-between",
         alignItems: "center",
         gap: "12px",
-        marginBottom: "18px",
+        marginBottom: "20px",
         flexWrap: "wrap"
       }}
     >
       <div>
-        <h3 style={{ ...tokens.title, fontSize: "17px" }}>{title}</h3>
-        {subtitle ? (
-          <p style={{ ...tokens.muted, fontSize: "13px", marginTop: "4px" }}>{subtitle}</p>
+        {eyebrow ? (
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "#94a3b8",
+              marginBottom: "4px"
+            }}
+          >
+            {eyebrow}
+          </div>
         ) : null}
+        <h3 style={styles.title}>{title}</h3>
+        {subtitle ? <p style={{ ...styles.muted, fontSize: "13px", marginTop: "4px" }}>{subtitle}</p> : null}
       </div>
       {action}
     </div>
@@ -111,6 +129,10 @@ function getPaymentTone(status: string) {
 
   if (status === "PROCESSING") {
     return { background: "#fef3c7", color: "#92400e", dot: "#f59e0b" };
+  }
+
+  if (status === "PENDING") {
+    return { background: "#dbeafe", color: "#1d4ed8", dot: "#3b82f6" };
   }
 
   return { background: "#f1f5f9", color: "#475569", dot: "#94a3b8" };
@@ -127,26 +149,35 @@ function formatWibDateTime(value: string) {
   }).format(new Date(value));
 }
 
-function getInitials(name: string) {
-  const trimmed = name.trim();
-  if (!trimmed) return "?";
-  const parts = trimmed.split(/\s+/);
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+function formatWibDateLong() {
+  return new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(new Date());
 }
 
-const AVATAR_PALETTE: Array<{ bg: string; color: string }> = [
-  { bg: "#dbeafe", color: "#1d4ed8" },
-  { bg: "#ede9fe", color: "#6d28d9" },
-  { bg: "#dcfce7", color: "#15803d" },
-  { bg: "#fee2e2", color: "#b91c1c" },
-  { bg: "#fef3c7", color: "#b45309" },
-  { bg: "#cffafe", color: "#0e7490" }
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("") || "?";
+}
+
+const AVATAR_PALETTE = [
+  ["#dbeafe", "#1d4ed8"],
+  ["#fef3c7", "#b45309"],
+  ["#dcfce7", "#15803d"],
+  ["#fae8ff", "#a21caf"],
+  ["#fee2e2", "#b91c1c"],
+  ["#e0e7ff", "#4338ca"]
 ];
 
-function pickAvatarColor(seed: string) {
+function pickPalette(seed: string) {
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
@@ -154,22 +185,54 @@ function pickAvatarColor(seed: string) {
   return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
 }
 
-type StatCard = {
-  label: string;
-  value: string;
-  caption: string;
-  iconBg: string;
-  iconColor: string;
-  ribbon: string;
-  icon: ReactNode;
-};
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  const safeValues = values.length > 0 ? values : [0, 0];
+  const max = Math.max(...safeValues, 1);
+  const min = Math.min(...safeValues, 0);
+  const range = max - min || 1;
+  const width = 96;
+  const height = 28;
+  const step = safeValues.length > 1 ? width / (safeValues.length - 1) : width;
+
+  const points = safeValues
+    .map((value, index) => {
+      const x = index * step;
+      const y = height - ((value - min) / range) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  const areaPath = `M0,${height} L${points.replace(/ /g, " L")} L${width},${height} Z`;
+  const linePath = `M${points.replace(/ /g, " L")}`;
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+      <defs>
+        <linearGradient id={`spark-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#spark-${color.replace("#", "")})`} />
+      <path d={linePath} stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function deterministicSparkline(seed: number, length = 8) {
+  const values: number[] = [];
+  let n = (Math.abs(seed) || 1) % 9301;
+  for (let i = 0; i < length; i += 1) {
+    n = (n * 9301 + 49297) % 233280;
+    values.push(40 + (n / 233280) * 60);
+  }
+  return values;
+}
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const isCompact = useIsMobile(1200);
   const [serverTime, setServerTime] = useState("");
-  const [serverDate, setServerDate] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -193,27 +256,10 @@ export default function AdminDashboardPage() {
   }, [brandingLogoFile]);
 
   useEffect(() => {
-    function syncClock() {
-      const now = new Date();
-      setServerTime(
-        now.toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit"
-        })
-      );
-      setServerDate(
-        new Intl.DateTimeFormat("id-ID", {
-          weekday: "long",
-          day: "2-digit",
-          month: "long",
-          year: "numeric"
-        }).format(now)
-      );
-    }
-
-    syncClock();
-    const timer = window.setInterval(syncClock, 1000);
+    setServerTime(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    const timer = window.setInterval(() => {
+      setServerTime(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    }, 1000);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -311,132 +357,244 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const stats: StatCard[] = useMemo(() => {
-    if (!data) return [];
+  const derived = useMemo(() => {
+    if (!data) {
+      return null;
+    }
 
     const successRate = data.requests > 0 ? Math.round((data.completed / data.requests) * 100) : 0;
-    const failRate = data.requests > 0 ? Math.round((data.failed / data.requests) * 100) : 0;
+    const failureRate = data.requests > 0 ? Math.round((data.failed / data.requests) * 100) : 0;
+    const inProgress = Math.max(data.requests - data.completed - data.failed, 0);
+    const pendingRate = data.requests > 0 ? Math.round((inProgress / data.requests) * 100) : 0;
+    const avgRevenue = data.completed > 0 ? Math.round(data.totalEarnings / data.completed) : 0;
 
-    return [
-      {
-        label: "Total Penghasilan",
-        value: formatRupiah(data.totalEarnings),
-        caption: "Akumulasi pembayaran sukses",
-        iconBg: "linear-gradient(135deg, #10b981, #047857)",
-        iconColor: "#ffffff",
-        ribbon: "linear-gradient(90deg, #10b981, #34d399)",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm.75 4.5a.75.75 0 0 0-1.5 0v.78a3 3 0 0 0-.16 5.84l1.66.5a1.5 1.5 0 0 1-.43 2.94 1.5 1.5 0 0 1-1.49-1.31.75.75 0 1 0-1.49.18 3 3 0 0 0 2.41 2.6V19a.75.75 0 0 0 1.5 0v-.94a3 3 0 0 0 .42-5.83l-1.65-.49a1.5 1.5 0 0 1 .43-2.94 1.5 1.5 0 0 1 1.48 1.27.75.75 0 1 0 1.49-.2 3 3 0 0 0-2.42-2.55V7.5Z"
-              fill="currentColor"
-            />
-          </svg>
-        )
+    const paymentBreakdown = data.recentRequests.reduce(
+      (acc, item) => {
+        const status = item.paymentStatus.toUpperCase();
+        if (status === "PAID") acc.paid += 1;
+        else if (status === "PROCESSING") acc.processing += 1;
+        else acc.pending += 1;
+        return acc;
       },
-      {
-        label: "Daftar Pengguna",
-        value: data.users.toLocaleString("id-ID"),
-        caption: "Akun terdaftar di platform",
-        iconBg: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-        iconColor: "#ffffff",
-        ribbon: "linear-gradient(90deg, #3b82f6, #60a5fa)",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM3.5 19a5.5 5.5 0 0 1 11 0H3.5Zm12 0a4.5 4.5 0 0 1 5-4.47V19h-5Z"
-              fill="currentColor"
-            />
-          </svg>
-        )
-      },
-      {
-        label: "Dokumen Sukses",
-        value: data.completed.toLocaleString("id-ID"),
-        caption: `Tingkat keberhasilan ${successRate}%`,
-        iconBg: "linear-gradient(135deg, #06b6d4, #0e7490)",
-        iconColor: "#ffffff",
-        ribbon: "linear-gradient(90deg, #06b6d4, #22d3ee)",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z" fill="currentColor" />
-          </svg>
-        )
-      },
-      {
-        label: "Dokumen Gagal",
-        value: data.failed.toLocaleString("id-ID"),
-        caption: `Rasio kegagalan ${failRate}%`,
-        iconBg: "linear-gradient(135deg, #f87171, #b91c1c)",
-        iconColor: "#ffffff",
-        ribbon: "linear-gradient(90deg, #f87171, #fda4af)",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm1 15h-2v-2h2v2Zm0-4h-2V7h2v6Z"
-              fill="currentColor"
-            />
-          </svg>
-        )
-      },
-      {
-        label: "Total Pengecekan",
-        value: data.requests.toLocaleString("id-ID"),
-        caption: "Order masuk sepanjang waktu",
-        iconBg: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
-        iconColor: "#ffffff",
-        ribbon: "linear-gradient(90deg, #8b5cf6, #a78bfa)",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2Zm-7 14H7v-2h5v2Zm5-4H7v-2h10v2Zm0-4H7V7h10v2Z"
-              fill="currentColor"
-            />
-          </svg>
-        )
-      }
-    ];
+      { paid: 0, processing: 0, pending: 0 }
+    );
+    const totalRecent = data.recentRequests.length || 1;
+
+    return {
+      successRate,
+      failureRate,
+      pendingRate,
+      inProgress,
+      avgRevenue,
+      paymentBreakdown,
+      totalRecent
+    };
   }, [data]);
 
   if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: "60vh",
-          display: "grid",
-          placeItems: "center",
-          color: "#64748b",
-          fontWeight: 600
-        }}
-      >
-        Loading dashboard...
-      </div>
-    );
+    return <div style={{ color: "#64748b", fontWeight: 600, padding: "20px" }}>Loading dashboard...</div>;
   }
 
-  if (!data) {
-    return (
-      <div style={{ color: "#64748b", padding: "20px" }}>Gagal memuat data.</div>
-    );
+  if (!data || !derived) {
+    return <div style={{ color: "#64748b", padding: "20px" }}>Gagal memuat data.</div>;
   }
 
-  const successRate = data.requests > 0 ? Math.round((data.completed / data.requests) * 100) : 0;
-  const failRate = data.requests > 0 ? Math.round((data.failed / data.requests) * 100) : 0;
-  const pendingCount = Math.max(data.requests - data.completed - data.failed, 0);
-  const pendingRate = data.requests > 0 ? Math.round((pendingCount / data.requests) * 100) : 0;
+  const stats = [
+    {
+      label: "Total Penghasilan",
+      value: formatRupiah(data.totalEarnings),
+      hint: `Rata-rata Rp ${derived.avgRevenue.toLocaleString("id-ID")} per pesanan sukses`,
+      accent: "#10b981",
+      bg: "#ecfdf5",
+      sparkSeed: data.totalEarnings || 1,
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 7V5m0 14v-2m4-7h-3.5a1.5 1.5 0 0 0 0 3h-1a1.5 1.5 0 0 0 0 3H16M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
+    },
+    {
+      label: "Daftar Pengguna",
+      value: data.users.toLocaleString("id-ID"),
+      hint: "Pengguna terdaftar di platform",
+      accent: "#2563eb",
+      bg: "#eff6ff",
+      sparkSeed: data.users + 7,
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
+    },
+    {
+      label: "Dokumen Sukses",
+      value: data.completed.toLocaleString("id-ID"),
+      hint: `${derived.successRate}% dari total pengecekan`,
+      accent: "#0ea5e9",
+      bg: "#ecfeff",
+      sparkSeed: data.completed + 13,
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="m9 11 3 3 8-8M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
+    },
+    {
+      label: "Dokumen Gagal",
+      value: data.failed.toLocaleString("id-ID"),
+      hint: `${derived.failureRate}% pengecekan gagal`,
+      accent: "#ef4444",
+      bg: "#fef2f2",
+      sparkSeed: data.failed + 19,
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
+    },
+    {
+      label: "Total Pengecekan",
+      value: data.requests.toLocaleString("id-ID"),
+      hint: `${derived.inProgress.toLocaleString("id-ID")} masih berjalan`,
+      accent: "#7c3aed",
+      bg: "#f5f3ff",
+      sparkSeed: data.requests + 23,
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    }
+  ];
+
+  const quickLinks: Array<{
+    label: string;
+    description: string;
+    href: string;
+    color: string;
+    bg: string;
+    icon: ReactNode;
+  }> = [
+    {
+      label: "Tambah Paket",
+      description: "Buat paket harga & voucher baru",
+      href: "/admin/packages",
+      color: "#2563eb",
+      bg: "#eff6ff",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
+      )
+    },
+    {
+      label: "Kelola Pesanan",
+      description: "Approve & verifikasi pembayaran",
+      href: "/admin/orders",
+      color: "#0ea5e9",
+      bg: "#ecfeff",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
+    },
+    {
+      label: "Atur Gateway",
+      description: "Sambungkan kanal pembayaran",
+      href: "/admin/gateway",
+      color: "#7c3aed",
+      bg: "#f5f3ff",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M3 8h18M3 12h18M3 16h12"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      )
+    },
+    {
+      label: "Program Affiliate",
+      description: "Pantau mitra & komisi",
+      href: "/admin/affiliates",
+      color: "#f59e0b",
+      bg: "#fef3c7",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
+    }
+  ];
+
+  const breakdownSegments = [
+    { label: "Lunas", value: derived.paymentBreakdown.paid, color: "#22c55e" },
+    { label: "Diproses", value: derived.paymentBreakdown.processing, color: "#f59e0b" },
+    { label: "Menunggu", value: derived.paymentBreakdown.pending, color: "#3b82f6" }
+  ];
+
+  const previewBrandName = brandingForm.brandName || "Verscan";
+  const previewLogoUrl = brandingLogoPreviewUrl || brandingForm.logoUrl || "";
 
   return (
     <div style={{ display: "grid", gap: "24px" }}>
+      {/* HERO */}
       <section
         style={{
           position: "relative",
+          borderRadius: "22px",
           overflow: "hidden",
-          borderRadius: "24px",
-          padding: isMobile ? "24px 20px" : "32px",
+          color: "#f8fafc",
           background:
-            "linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #2563eb 100%)",
-          color: "#ffffff",
-          boxShadow: "0 30px 60px -30px rgba(15, 23, 42, 0.45)"
+            "radial-gradient(circle at top right, rgba(96, 165, 250, 0.45), transparent 55%), radial-gradient(circle at 20% 80%, rgba(129, 140, 248, 0.35), transparent 50%), linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #1e3a8a 100%)",
+          padding: isMobile ? "26px 20px" : "32px 36px",
+          boxShadow: "0 20px 50px -32px rgba(15, 23, 42, 0.55)"
         }}
       >
         <div
@@ -445,193 +603,200 @@ export default function AdminDashboardPage() {
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "radial-gradient(circle at 12% 20%, rgba(56, 189, 248, 0.35), transparent 45%), radial-gradient(circle at 90% 0%, rgba(167, 139, 250, 0.4), transparent 45%), radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.25), transparent 50%)",
-            pointerEvents: "none"
-          }}
-        />
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            top: "-60px",
-            right: "-40px",
-            width: "220px",
-            height: "220px",
-            borderRadius: "50%",
-            border: "1px solid rgba(255, 255, 255, 0.18)",
-            pointerEvents: "none"
-          }}
-        />
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            top: "-100px",
-            right: "-90px",
-            width: "320px",
-            height: "320px",
-            borderRadius: "50%",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            pointerEvents: "none"
+              "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+            opacity: 0.5,
+            maskImage: "linear-gradient(135deg, rgba(0,0,0,0.6), transparent 60%)"
           }}
         />
 
         <div
           style={{
             position: "relative",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: isMobile ? "flex-start" : "center",
-            gap: "20px",
-            flexDirection: isMobile ? "column" : "row"
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1.4fr 1fr",
+            gap: isMobile ? "20px" : "32px",
+            alignItems: "center"
           }}
         >
-          <div style={{ maxWidth: "640px" }}>
-            <span
+          <div>
+            <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
                 padding: "6px 12px",
                 borderRadius: "999px",
-                background: "rgba(255, 255, 255, 0.12)",
-                border: "1px solid rgba(255, 255, 255, 0.22)",
-                color: "rgba(255, 255, 255, 0.92)",
-                fontSize: "12px",
+                background: "rgba(255, 255, 255, 0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                fontSize: "11.5px",
                 fontWeight: 600,
-                letterSpacing: "0.05em",
+                color: "#cbd5e1",
+                letterSpacing: "0.06em",
                 textTransform: "uppercase"
               }}
             >
-              <span
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: "#34d399",
-                  boxShadow: "0 0 0 4px rgba(52, 211, 153, 0.25)"
-                }}
-              />
-              Live Overview
-            </span>
+              <span style={{ width: "6px", height: "6px", borderRadius: "999px", background: "#22c55e" }} />
+              Sistem berjalan normal
+            </div>
             <h1
               style={{
-                fontSize: isMobile ? "26px" : "32px",
+                marginTop: "14px",
+                fontSize: isMobile ? "24px" : "30px",
                 fontWeight: 800,
                 color: "#ffffff",
-                lineHeight: 1.15,
-                marginTop: "16px",
-                letterSpacing: "-0.01em"
+                lineHeight: 1.18,
+                letterSpacing: "-0.02em"
               }}
             >
-              Selamat datang kembali, Admin.
+              Selamat datang kembali, Admin
             </h1>
             <p
               style={{
-                color: "rgba(255, 255, 255, 0.78)",
                 marginTop: "10px",
+                color: "#cbd5e1",
                 fontSize: "14px",
-                lineHeight: 1.6,
-                maxWidth: "560px"
+                maxWidth: "560px",
+                lineHeight: 1.6
               }}
             >
-              Pantau performa platform, kelola paket harga, voucher, gateway pembayaran, dan
-              identitas brand dari satu panel terpusat.
+              Pantau performa platform, kelola pesanan masuk, dan atur identitas brand dari satu dashboard yang ringkas.
+              Hari ini: <span style={{ color: "#f8fafc", fontWeight: 600 }}>{formatWibDateLong()}</span>.
             </p>
 
             <div
               style={{
-                display: "flex",
-                gap: "10px",
                 marginTop: "22px",
-                flexWrap: "wrap"
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, minmax(0, 1fr))",
+                gap: "12px",
+                maxWidth: "560px"
               }}
             >
-              <Link
-                href="/admin/orders"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "10px 18px",
-                  borderRadius: "12px",
-                  background: "#ffffff",
-                  color: "#1e3a8a",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  textDecoration: "none",
-                  boxShadow: "0 8px 20px -10px rgba(15, 23, 42, 0.4)"
-                }}
-              >
-                Lihat Pesanan
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </Link>
-              <Link
-                href="/admin/packages"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "10px 18px",
-                  borderRadius: "12px",
-                  background: "rgba(255, 255, 255, 0.1)",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  textDecoration: "none",
-                  border: "1px solid rgba(255, 255, 255, 0.25)"
-                }}
-              >
-                Kelola Paket
-              </Link>
+              {[
+                {
+                  label: "Pendapatan",
+                  value: formatRupiah(data.totalEarnings),
+                  hint: "Akumulasi"
+                },
+                {
+                  label: "Tingkat Sukses",
+                  value: `${derived.successRate}%`,
+                  hint: `${data.completed.toLocaleString("id-ID")} sukses`
+                },
+                {
+                  label: "Antrean",
+                  value: derived.inProgress.toLocaleString("id-ID"),
+                  hint: "Sedang diproses"
+                }
+              ].map((mini) => (
+                <div
+                  key={mini.label}
+                  style={{
+                    borderRadius: "14px",
+                    background: "rgba(255, 255, 255, 0.08)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    padding: "12px 14px",
+                    backdropFilter: "blur(6px)"
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "10.5px",
+                      color: "#cbd5e1",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em"
+                    }}
+                  >
+                    {mini.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: isMobile ? "16px" : "18px",
+                      color: "#ffffff",
+                      fontWeight: 800,
+                      marginTop: "6px",
+                      letterSpacing: "-0.01em",
+                      fontVariantNumeric: "tabular-nums"
+                    }}
+                  >
+                    {mini.value}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>{mini.hint}</div>
+                </div>
+              ))}
             </div>
           </div>
 
           <div
             style={{
-              minWidth: isMobile ? "100%" : "240px",
-              padding: "18px 20px",
-              borderRadius: "18px",
-              background: "rgba(255, 255, 255, 0.12)",
-              border: "1px solid rgba(255, 255, 255, 0.22)",
-              backdropFilter: "blur(14px)"
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              alignItems: isMobile ? "flex-start" : "flex-end"
             }}
           >
             <div
               style={{
-                color: "rgba(255, 255, 255, 0.7)",
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em"
+                padding: "16px 20px",
+                borderRadius: "16px",
+                background: "rgba(255, 255, 255, 0.08)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                minWidth: isMobile ? "100%" : "220px",
+                backdropFilter: "blur(8px)"
               }}
             >
-              Waktu Server (WIB)
+              <div
+                style={{
+                  color: "#cbd5e1",
+                  fontSize: "10.5px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em"
+                }}
+              >
+                Waktu Server WIB
+              </div>
+              <div
+                style={{
+                  color: "#ffffff",
+                  fontSize: "30px",
+                  fontWeight: 800,
+                  marginTop: "6px",
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: "-0.02em"
+                }}
+              >
+                {serverTime}
+              </div>
+              <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                Sinkron dengan zona Asia/Jakarta
+              </div>
             </div>
-            <div
+
+            <Link
+              href="/admin/orders"
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "10px 18px",
+                borderRadius: "12px",
+                background: "linear-gradient(135deg, #2563eb, #4f46e5)",
                 color: "#ffffff",
-                fontSize: "30px",
-                fontWeight: 700,
-                marginTop: "6px",
-                fontVariantNumeric: "tabular-nums",
-                letterSpacing: "-0.02em"
+                fontWeight: 600,
+                fontSize: "13px",
+                textDecoration: "none",
+                boxShadow: "0 12px 30px -12px rgba(37, 99, 235, 0.6)"
               }}
             >
-              {serverTime}
-            </div>
-            <div
-              style={{
-                color: "rgba(255, 255, 255, 0.78)",
-                fontSize: "12px",
-                marginTop: "4px",
-                fontWeight: 500
-              }}
-            >
-              {serverDate}
-            </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Lihat semua pesanan
+            </Link>
           </div>
         </div>
       </section>
@@ -639,38 +804,24 @@ export default function AdminDashboardPage() {
       {message ? (
         <div
           style={{
-            padding: "14px 18px",
-            borderRadius: "14px",
-            background: message.includes("berhasil") ? "#ecfdf5" : "#fef2f2",
+            padding: "12px 16px",
+            borderRadius: "12px",
+            background: message.includes("berhasil") ? "#dcfce7" : "#fef2f2",
             border: message.includes("berhasil") ? "1px solid #bbf7d0" : "1px solid #fecaca",
             color: message.includes("berhasil") ? "#166534" : "#991b1b",
             fontWeight: 600,
-            fontSize: "14px",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px"
+            fontSize: "14px"
           }}
         >
-          <span
-            style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              background: message.includes("berhasil") ? "#22c55e" : "#ef4444"
-            }}
-          />
           {message}
         </div>
       ) : null}
 
+      {/* KPI STRIP */}
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile
-            ? "1fr"
-            : isCompact
-              ? "repeat(2, minmax(0, 1fr))"
-              : "repeat(5, minmax(0, 1fr))",
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(220px, 1fr))",
           gap: "16px"
         }}
       >
@@ -678,13 +829,10 @@ export default function AdminDashboardPage() {
           <article
             key={stat.label}
             style={{
-              ...tokens.card,
+              ...styles.card,
               padding: "20px",
               position: "relative",
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-              gap: "14px"
+              overflow: "hidden"
             }}
           >
             <span
@@ -695,94 +843,93 @@ export default function AdminDashboardPage() {
                 left: 0,
                 right: 0,
                 height: "3px",
-                background: stat.ribbon
+                background: `linear-gradient(90deg, ${stat.accent} 0%, ${stat.accent}55 100%)`
               }}
             />
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: "12px"
-              }}
-            >
-              <div
-                style={{
-                  color: "#64748b",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  lineHeight: 1.3
-                }}
-              >
-                {stat.label}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em"
+                  }}
+                >
+                  {stat.label}
+                </div>
+                <div
+                  style={{
+                    color: "#0f172a",
+                    fontSize: "26px",
+                    fontWeight: 800,
+                    marginTop: "10px",
+                    letterSpacing: "-0.02em",
+                    fontVariantNumeric: "tabular-nums"
+                  }}
+                >
+                  {stat.value}
+                </div>
+                <div
+                  style={{
+                    color: "#64748b",
+                    fontSize: "12px",
+                    marginTop: "8px",
+                    lineHeight: 1.4
+                  }}
+                >
+                  {stat.hint}
+                </div>
               </div>
               <div
                 style={{
                   width: "40px",
                   height: "40px",
                   borderRadius: "12px",
-                  background: stat.iconBg,
-                  color: stat.iconColor,
+                  background: stat.bg,
+                  color: stat.accent,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  flexShrink: 0,
-                  boxShadow: "0 8px 18px -8px rgba(15, 23, 42, 0.35)"
+                  flexShrink: 0
                 }}
               >
                 {stat.icon}
               </div>
             </div>
-            <div>
-              <div
-                style={{
-                  color: "#0f172a",
-                  fontSize: "24px",
-                  fontWeight: 800,
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.1
-                }}
-              >
-                {stat.value}
-              </div>
-              <div
-                style={{
-                  color: "#94a3b8",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  marginTop: "6px"
-                }}
-              >
-                {stat.caption}
-              </div>
+
+            <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
+              <Sparkline values={deterministicSparkline(stat.sparkSeed)} color={stat.accent} />
             </div>
           </article>
         ))}
       </section>
 
+      {/* MAIN GRID */}
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 2fr) minmax(0, 1fr)",
-          gap: "20px",
-          alignItems: "stretch"
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 2fr) minmax(0, 1fr)",
+          gap: "20px"
         }}
       >
-        <article style={{ ...tokens.card, padding: isMobile ? "20px" : "24px" }}>
+        {/* Pesanan Terbaru */}
+        <article style={{ ...styles.card, padding: isMobile ? "18px" : "24px" }}>
           <SectionHeader
+            eyebrow="Aktivitas"
             title="Pesanan Terbaru"
-            subtitle="Snapshot order yang baru masuk ke sistem."
+            subtitle="Snapshot order paling baru yang masuk ke sistem."
             action={
               <Link
                 href="/admin/orders"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
+                  justifyContent: "center",
                   gap: "6px",
-                  minHeight: "36px",
-                  padding: "0 14px",
+                  minHeight: "38px",
+                  padding: "0 16px",
                   borderRadius: "10px",
                   background: "#0f172a",
                   color: "#ffffff",
@@ -792,8 +939,8 @@ export default function AdminDashboardPage() {
                 }}
               >
                 Lihat Semua
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
             }
@@ -802,22 +949,23 @@ export default function AdminDashboardPage() {
           {data.recentRequests.length === 0 ? (
             <div
               style={{
-                padding: "32px 16px",
-                textAlign: "center",
-                color: "#64748b",
-                background: "#f8fafc",
+                padding: "32px",
                 borderRadius: "14px",
                 border: "1px dashed #cbd5e1",
-                fontSize: "14px"
+                background: "#f8fafc",
+                textAlign: "center",
+                color: "#64748b",
+                fontWeight: 600,
+                fontSize: "13px"
               }}
             >
-              Belum ada pesanan yang masuk.
+              Belum ada pesanan masuk.
             </div>
           ) : isMobile ? (
             <div style={{ display: "grid", gap: "10px" }}>
               {data.recentRequests.map((req) => {
                 const tone = getPaymentTone(req.paymentStatus);
-                const avatarTone = pickAvatarColor(req.user.fullName || req.id);
+                const [bg, fg] = pickPalette(req.user.fullName);
 
                 return (
                   <article
@@ -829,23 +977,15 @@ export default function AdminDashboardPage() {
                       padding: "14px"
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: "10px",
-                        alignItems: "flex-start",
-                        marginBottom: "12px"
-                      }}
-                    >
-                      <div style={{ display: "flex", gap: "10px", alignItems: "center", minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                         <div
                           style={{
-                            width: "38px",
-                            height: "38px",
-                            borderRadius: "50%",
-                            background: avatarTone.bg,
-                            color: avatarTone.color,
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "12px",
+                            background: bg,
+                            color: fg,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -854,24 +994,14 @@ export default function AdminDashboardPage() {
                             flexShrink: 0
                           }}
                         >
-                          {getInitials(req.user.fullName || "?")}
+                          {getInitials(req.user.fullName)}
                         </div>
                         <div style={{ minWidth: 0 }}>
+                          <div style={{ color: "#0f172a", fontWeight: 700, fontSize: "14px", lineHeight: 1.3 }}>
+                            {req.user.fullName}
+                          </div>
                           <div style={{ color: "#94a3b8", fontWeight: 600, fontSize: "11px" }}>
                             #{req.id.slice(-4).toUpperCase()}
-                          </div>
-                          <div
-                            style={{
-                              color: "#0f172a",
-                              fontWeight: 700,
-                              fontSize: "14px",
-                              lineHeight: 1.3,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap"
-                            }}
-                          >
-                            {req.user.fullName}
                           </div>
                         </div>
                       </div>
@@ -890,28 +1020,39 @@ export default function AdminDashboardPage() {
                           whiteSpace: "nowrap"
                         }}
                       >
-                        <span
-                          style={{
-                            width: "6px",
-                            height: "6px",
-                            borderRadius: "50%",
-                            background: tone.dot
-                          }}
-                        />
+                        <span style={{ width: "6px", height: "6px", borderRadius: "999px", background: tone.dot }} />
                         {req.paymentStatus}
                       </span>
                     </div>
 
                     <div style={{ display: "grid", gap: "8px" }}>
                       <div>
-                        <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>
+                        <div
+                          style={{
+                            color: "#94a3b8",
+                            fontSize: "10.5px",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            marginBottom: "2px",
+                            fontWeight: 600
+                          }}
+                        >
                           Produk
                         </div>
                         <div style={{ color: "#334155", fontWeight: 500, fontSize: "13px" }}>{req.package.name}</div>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                         <div>
-                          <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>
+                          <div
+                            style={{
+                              color: "#94a3b8",
+                              fontSize: "10.5px",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.06em",
+                              marginBottom: "2px",
+                              fontWeight: 600
+                            }}
+                          >
                             Waktu
                           </div>
                           <div style={{ color: "#334155", fontWeight: 500, fontSize: "12px", lineHeight: 1.4 }}>
@@ -919,10 +1060,26 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
                         <div>
-                          <div style={{ color: "#94a3b8", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>
+                          <div
+                            style={{
+                              color: "#94a3b8",
+                              fontSize: "10.5px",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.06em",
+                              marginBottom: "2px",
+                              fontWeight: 600
+                            }}
+                          >
                             Total
                           </div>
-                          <div style={{ color: "#0f172a", fontWeight: 700, fontSize: "13px" }}>
+                          <div
+                            style={{
+                              color: "#0f172a",
+                              fontWeight: 700,
+                              fontSize: "13px",
+                              fontVariantNumeric: "tabular-nums"
+                            }}
+                          >
                             {formatRupiah(req.finalAmount || 0)}
                           </div>
                         </div>
@@ -934,21 +1091,23 @@ export default function AdminDashboardPage() {
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: "640px" }}>
+              <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: "720px" }}>
                 <thead>
                   <tr>
-                    {["ID", "Pelanggan", "Produk", "Waktu", "Total", "Status"].map((header) => (
+                    {["Pelanggan", "Produk", "Waktu", "Total", "Status"].map((header) => (
                       <th
                         key={header}
                         style={{
                           textAlign: "left",
-                          color: "#64748b",
-                          fontSize: "11px",
+                          color: "#94a3b8",
+                          fontSize: "10.5px",
                           textTransform: "uppercase",
-                          letterSpacing: "0.06em",
-                          padding: "0 14px 12px 14px",
+                          letterSpacing: "0.1em",
+                          padding: "12px 16px",
                           fontWeight: 700,
-                          background: "transparent"
+                          background: "#f8fafc",
+                          borderTop: "1px solid #e2e8f0",
+                          borderBottom: "1px solid #e2e8f0"
                         }}
                       >
                         {header}
@@ -959,98 +1118,60 @@ export default function AdminDashboardPage() {
                 <tbody>
                   {data.recentRequests.map((req, index) => {
                     const tone = getPaymentTone(req.paymentStatus);
-                    const avatarTone = pickAvatarColor(req.user.fullName || req.id);
+                    const [bg, fg] = pickPalette(req.user.fullName);
                     const isLast = index === data.recentRequests.length - 1;
+                    const cellBase = {
+                      padding: "16px",
+                      borderBottom: isLast ? "none" : "1px solid #f1f5f9"
+                    } as const;
 
                     return (
                       <tr key={req.id}>
-                        <td
-                          style={{
-                            padding: "14px",
-                            color: "#94a3b8",
-                            fontWeight: 600,
-                            fontSize: "12px",
-                            borderBottom: isLast ? "none" : "1px solid #f1f5f9",
-                            verticalAlign: "middle",
-                            whiteSpace: "nowrap"
-                          }}
-                        >
-                          #{req.id.slice(-4).toUpperCase()}
-                        </td>
-                        <td
-                          style={{
-                            padding: "14px",
-                            borderBottom: isLast ? "none" : "1px solid #f1f5f9",
-                            verticalAlign: "middle"
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <td style={cellBase}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                             <div
                               style={{
-                                width: "34px",
-                                height: "34px",
-                                borderRadius: "50%",
-                                background: avatarTone.bg,
-                                color: avatarTone.color,
+                                width: "38px",
+                                height: "38px",
+                                borderRadius: "12px",
+                                background: bg,
+                                color: fg,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 fontWeight: 700,
-                                fontSize: "12px",
+                                fontSize: "13px",
                                 flexShrink: 0
                               }}
                             >
-                              {getInitials(req.user.fullName || "?")}
+                              {getInitials(req.user.fullName)}
                             </div>
-                            <span style={{ color: "#0f172a", fontWeight: 600, fontSize: "14px" }}>
-                              {req.user.fullName}
-                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ color: "#0f172a", fontWeight: 600, fontSize: "14px", lineHeight: 1.3 }}>
+                                {req.user.fullName}
+                              </div>
+                              <div style={{ color: "#94a3b8", fontWeight: 500, fontSize: "12px" }}>
+                                #{req.id.slice(-4).toUpperCase()}
+                              </div>
+                            </div>
                           </div>
                         </td>
-                        <td
-                          style={{
-                            padding: "14px",
-                            color: "#475569",
-                            fontSize: "13px",
-                            borderBottom: isLast ? "none" : "1px solid #f1f5f9",
-                            verticalAlign: "middle"
-                          }}
-                        >
-                          {req.package.name}
-                        </td>
-                        <td
-                          style={{
-                            padding: "14px",
-                            color: "#475569",
-                            fontWeight: 500,
-                            fontSize: "12px",
-                            borderBottom: isLast ? "none" : "1px solid #f1f5f9",
-                            verticalAlign: "middle",
-                            whiteSpace: "nowrap"
-                          }}
-                        >
+                        <td style={{ ...cellBase, color: "#475569", fontSize: "13.5px" }}>{req.package.name}</td>
+                        <td style={{ ...cellBase, color: "#475569", fontWeight: 500, fontSize: "12.5px" }}>
                           {formatWibDateTime(req.createdAt)}
                         </td>
                         <td
                           style={{
-                            padding: "14px",
+                            ...cellBase,
                             color: "#0f172a",
                             fontWeight: 700,
                             fontSize: "14px",
-                            borderBottom: isLast ? "none" : "1px solid #f1f5f9",
-                            verticalAlign: "middle",
-                            whiteSpace: "nowrap"
+                            fontVariantNumeric: "tabular-nums"
                           }}
                         >
                           {formatRupiah(req.finalAmount || 0)}
                         </td>
-                        <td
-                          style={{
-                            padding: "14px",
-                            borderBottom: isLast ? "none" : "1px solid #f1f5f9",
-                            verticalAlign: "middle"
-                          }}
-                        >
+                        <td style={cellBase}>
                           <span
                             style={{
                               display: "inline-flex",
@@ -1062,17 +1183,10 @@ export default function AdminDashboardPage() {
                               background: tone.background,
                               color: tone.color,
                               fontWeight: 600,
-                              fontSize: "11px"
+                              fontSize: "11.5px"
                             }}
                           >
-                            <span
-                              style={{
-                                width: "6px",
-                                height: "6px",
-                                borderRadius: "50%",
-                                background: tone.dot
-                              }}
-                            />
+                            <span style={{ width: "6px", height: "6px", borderRadius: "999px", background: tone.dot }} />
                             {req.paymentStatus}
                           </span>
                         </td>
@@ -1085,494 +1199,492 @@ export default function AdminDashboardPage() {
           )}
         </article>
 
-        <article
-          style={{
-            ...tokens.card,
-            padding: isMobile ? "20px" : "24px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px"
-          }}
-        >
-          <SectionHeader
-            title="Performa Platform"
-            subtitle="Distribusi status order saat ini."
-          />
+        {/* Right column */}
+        <div style={{ display: "grid", gap: "20px", alignContent: "flex-start" }}>
+          {/* Status Operasional */}
+          <article style={{ ...styles.card, padding: "22px" }}>
+            <SectionHeader
+              eyebrow="Performa"
+              title="Status Operasional"
+              subtitle="Distribusi hasil pengecekan dokumen."
+            />
 
-          <PerformanceMeter
-            label="Sukses"
-            value={data.completed}
-            total={data.requests}
-            percent={successRate}
-            tone={{ bar: "linear-gradient(90deg, #10b981, #34d399)", text: "#047857" }}
-          />
-          <PerformanceMeter
-            label="Pending"
-            value={pendingCount}
-            total={data.requests}
-            percent={pendingRate}
-            tone={{ bar: "linear-gradient(90deg, #f59e0b, #fbbf24)", text: "#b45309" }}
-          />
-          <PerformanceMeter
-            label="Gagal"
-            value={data.failed}
-            total={data.requests}
-            percent={failRate}
-            tone={{ bar: "linear-gradient(90deg, #f87171, #ef4444)", text: "#b91c1c" }}
-          />
+            <div style={{ display: "grid", gap: "14px" }}>
+              {[
+                {
+                  label: "Tingkat Sukses",
+                  value: derived.successRate,
+                  color: "#22c55e",
+                  count: data.completed,
+                  total: data.requests
+                },
+                {
+                  label: "Sedang Berjalan",
+                  value: derived.pendingRate,
+                  color: "#3b82f6",
+                  count: derived.inProgress,
+                  total: data.requests
+                },
+                {
+                  label: "Gagal",
+                  value: derived.failureRate,
+                  color: "#ef4444",
+                  count: data.failed,
+                  total: data.requests
+                }
+              ].map((row) => (
+                <div key={row.label}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                    <span style={{ color: "#475569", fontWeight: 600, fontSize: "13px" }}>{row.label}</span>
+                    <span style={{ color: "#0f172a", fontWeight: 700, fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
+                      {row.value}%
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: "8px",
+                      borderRadius: "999px",
+                      background: "#f1f5f9",
+                      overflow: "hidden"
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.max(row.value, 1.5)}%`,
+                        height: "100%",
+                        background: `linear-gradient(90deg, ${row.color} 0%, ${row.color}cc 100%)`,
+                        borderRadius: "999px",
+                        transition: "width 0.4s ease"
+                      }}
+                    />
+                  </div>
+                  <div style={{ color: "#94a3b8", fontSize: "11.5px", marginTop: "4px", fontWeight: 500 }}>
+                    {row.count.toLocaleString("id-ID")} dari {row.total.toLocaleString("id-ID")} pengecekan
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          <div
-            style={{
-              marginTop: "auto",
-              paddingTop: "8px",
-              borderTop: "1px solid #f1f5f9",
-              display: "grid",
-              gap: "10px"
-            }}
-          >
             <div
               style={{
-                color: "#64748b",
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em"
+                marginTop: "20px",
+                padding: "14px 16px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(79, 70, 229, 0.08) 100%)",
+                border: "1px solid rgba(37, 99, 235, 0.18)"
               }}
             >
-              Aksi Cepat
-            </div>
-            <div style={{ display: "grid", gap: "8px" }}>
-              <QuickAction
-                href="/admin/packages"
-                label="Kelola Paket"
-                description="Atur harga & paket layanan"
-                icon={
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path
-                      d="M12 3 4 7v10l8 4 8-4V7l-8-4Zm0 2.2 5.6 2.8L12 10.8 6.4 8 12 5.2Zm-6 4.4 5 2.5v6.5l-5-2.5V9.6Zm7 8.9v-6.5l5-2.5v6.5l-5 2.5Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                }
-              />
-              <QuickAction
-                href="/admin/gateway"
-                label="Gateway"
-                description="Konfigurasi pembayaran"
-                icon={
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path
-                      d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11Zm2 1.5v2h12V8H6Zm0 5v4h5v-4H6Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                }
-              />
-              <QuickAction
-                href="/admin/affiliates"
-                label="Affiliate"
-                description="Pantau partner & komisi"
-                icon={
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path
-                      d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM4 19a5 5 0 0 1 10 0H4Zm11 0a4 4 0 0 1 5-3.87V19h-5Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                }
-              />
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section style={{ ...tokens.card, padding: isMobile ? "20px" : "24px" }}>
-        <SectionHeader
-          title="Branding & Sosial"
-          subtitle="Kelola identitas brand yang dipakai seluruh frontend."
-        />
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.4fr) minmax(0, 1fr)",
-            gap: "20px",
-            alignItems: "start"
-          }}
-        >
-          <form
-            id="branding-form"
-            onSubmit={handleBrandingSubmit}
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
-              gap: "14px"
-            }}
-          >
-            <Field label="Nama Brand">
-              <input
-                value={brandingForm.brandName}
-                onChange={(e) =>
-                  setBrandingForm((prev) => ({ ...prev, brandName: e.target.value }))
-                }
-                style={tokens.input}
-              />
-            </Field>
-            <Field label="Link Instagram">
-              <input
-                value={brandingForm.instagramUrl || ""}
-                onChange={(e) =>
-                  setBrandingForm((prev) => ({ ...prev, instagramUrl: e.target.value }))
-                }
-                placeholder="https://instagram.com/..."
-                style={tokens.input}
-              />
-            </Field>
-            <Field label="Link TikTok">
-              <input
-                value={brandingForm.tiktokUrl || ""}
-                onChange={(e) =>
-                  setBrandingForm((prev) => ({ ...prev, tiktokUrl: e.target.value }))
-                }
-                placeholder="https://www.tiktok.com/..."
-                style={tokens.input}
-              />
-            </Field>
-            <Field label="Link WhatsApp">
-              <input
-                value={brandingForm.whatsappUrl || ""}
-                onChange={(e) =>
-                  setBrandingForm((prev) => ({ ...prev, whatsappUrl: e.target.value }))
-                }
-                placeholder="https://wa.me/628..."
-                style={tokens.input}
-              />
-            </Field>
-            <Field label="Upload Logo Lokal" full={!isMobile}>
-              <input
-                type="file"
-                accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
-                onChange={(e) => setBrandingLogoFile(e.target.files?.[0] || null)}
+              <div style={{ color: "#1e3a8a", fontWeight: 700, fontSize: "13px" }}>
+                Rata-rata revenue per pesanan sukses
+              </div>
+              <div
                 style={{
-                  ...tokens.input,
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "10px 14px"
+                  color: "#0f172a",
+                  fontSize: "20px",
+                  fontWeight: 800,
+                  marginTop: "4px",
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: "-0.01em"
                 }}
-              />
-            </Field>
-          </form>
-
-          <aside
-            style={{
-              ...tokens.softCard,
-              padding: "20px",
-              background:
-                "linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-              minHeight: "100%"
-            }}
-          >
-            <div
-              style={{
-                color: "#64748b",
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em"
-              }}
-            >
-              Pratinjau Identitas
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              {brandingLogoPreviewUrl || brandingForm.logoUrl ? (
-                <img
-                  src={brandingLogoPreviewUrl || brandingForm.logoUrl}
-                  alt={brandingForm.brandName}
-                  style={{
-                    width: "60px",
-                    height: "60px",
-                    borderRadius: "16px",
-                    objectFit: "contain",
-                    background: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    padding: "8px",
-                    flexShrink: 0
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: "60px",
-                    height: "60px",
-                    borderRadius: "16px",
-                    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: "14px",
-                    flexShrink: 0,
-                    boxShadow: "0 12px 24px -16px rgba(37, 99, 235, 0.6)"
-                  }}
-                >
-                  {(brandingForm.brandName || "VS").slice(0, 2).toUpperCase()}
-                </div>
-              )}
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    color: "#0f172a",
-                    fontWeight: 800,
-                    fontSize: "18px",
-                    letterSpacing: "-0.01em"
-                  }}
-                >
-                  {brandingForm.brandName || "Verscan"}
-                </div>
-                <div
-                  style={{
-                    color: "#64748b",
-                    fontSize: "12px",
-                    marginTop: "4px",
-                    lineHeight: 1.5
-                  }}
-                >
-                  {brandingLogoFile
-                    ? brandingLogoFile.name
-                    : brandingForm.logoUrl
-                      ? "Logo tampil di navbar, footer, modal login, dan panel admin."
-                      : "Belum ada logo. Maks 5 MB. PNG/JPG/WEBP/SVG."}
-                </div>
+              >
+                {formatRupiah(derived.avgRevenue)}
               </div>
             </div>
+          </article>
+
+          {/* Aksi Cepat */}
+          <article style={{ ...styles.card, padding: "22px" }}>
+            <SectionHeader
+              eyebrow="Pintasan"
+              title="Aksi Cepat"
+              subtitle="Akses langsung ke modul utama."
+            />
+
+            <div style={{ display: "grid", gap: "10px" }}>
+              {quickLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "12px 14px",
+                    borderRadius: "12px",
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    textDecoration: "none",
+                    color: "inherit",
+                    transition: "border-color 0.15s, transform 0.15s, box-shadow 0.15s"
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "12px",
+                      background: link.bg,
+                      color: link.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0
+                    }}
+                  >
+                    {link.icon}
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "block", color: "#0f172a", fontWeight: 600, fontSize: "13.5px" }}>
+                      {link.label}
+                    </span>
+                    <span style={{ display: "block", color: "#64748b", fontSize: "12px", marginTop: "2px" }}>
+                      {link.description}
+                    </span>
+                  </span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M9 18l6-6-6-6"
+                      stroke="#94a3b8"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          </article>
+
+          {/* Distribusi Pembayaran */}
+          <article style={{ ...styles.card, padding: "22px" }}>
+            <SectionHeader
+              eyebrow="Pembayaran"
+              title="Distribusi Status"
+              subtitle={`Berdasarkan ${derived.totalRecent} order terbaru.`}
+            />
 
             <div
               style={{
                 display: "flex",
-                flexWrap: "wrap",
-                gap: "8px"
+                width: "100%",
+                height: "12px",
+                borderRadius: "999px",
+                overflow: "hidden",
+                background: "#f1f5f9"
               }}
             >
-              <SocialChip label="Instagram" url={brandingForm.instagramUrl} color="#db2777" />
-              <SocialChip label="TikTok" url={brandingForm.tiktokUrl} color="#0f172a" />
-              <SocialChip label="WhatsApp" url={brandingForm.whatsappUrl} color="#16a34a" />
+              {breakdownSegments.map((seg) =>
+                seg.value > 0 ? (
+                  <div
+                    key={seg.label}
+                    style={{
+                      width: `${(seg.value / derived.totalRecent) * 100}%`,
+                      background: seg.color,
+                      transition: "width 0.4s ease"
+                    }}
+                    title={`${seg.label}: ${seg.value}`}
+                  />
+                ) : null
+              )}
             </div>
+
+            <div style={{ marginTop: "14px", display: "grid", gap: "10px" }}>
+              {breakdownSegments.map((seg) => (
+                <div
+                  key={seg.label}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "10px"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span
+                      style={{
+                        width: "10px",
+                        height: "10px",
+                        borderRadius: "999px",
+                        background: seg.color
+                      }}
+                    />
+                    <span style={{ color: "#475569", fontSize: "13px", fontWeight: 600 }}>{seg.label}</span>
+                  </div>
+                  <div
+                    style={{
+                      color: "#0f172a",
+                      fontWeight: 700,
+                      fontSize: "13px",
+                      fontVariantNumeric: "tabular-nums"
+                    }}
+                  >
+                    {seg.value}
+                    <span style={{ color: "#94a3b8", fontWeight: 500, marginLeft: "6px" }}>
+                      ({Math.round((seg.value / derived.totalRecent) * 100)}%)
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
+
+      {/* Branding */}
+      <section>
+        <article style={{ ...styles.card, padding: isMobile ? "18px" : "24px" }}>
+          <SectionHeader
+            eyebrow="Identitas"
+            title="Branding & Sosial"
+            subtitle="Atur identitas brand yang dipakai di seluruh frontend dan panel admin."
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 2fr) minmax(0, 1fr)",
+              gap: "20px"
+            }}
+          >
+            <form
+              id="branding-form"
+              onSubmit={handleBrandingSubmit}
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                gap: "14px"
+              }}
+            >
+              <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
+                Nama Brand
+                <input
+                  value={brandingForm.brandName}
+                  onChange={(e) => setBrandingForm((prev) => ({ ...prev, brandName: e.target.value }))}
+                  style={styles.input}
+                />
+              </label>
+              <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
+                Link Instagram
+                <input
+                  value={brandingForm.instagramUrl || ""}
+                  onChange={(e) => setBrandingForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
+                  placeholder="https://instagram.com/..."
+                  style={styles.input}
+                />
+              </label>
+              <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
+                Link TikTok
+                <input
+                  value={brandingForm.tiktokUrl || ""}
+                  onChange={(e) => setBrandingForm((prev) => ({ ...prev, tiktokUrl: e.target.value }))}
+                  placeholder="https://www.tiktok.com/..."
+                  style={styles.input}
+                />
+              </label>
+              <label style={{ display: "grid", gap: "6px", color: "#334155", fontWeight: 600, fontSize: "13px" }}>
+                Link WhatsApp
+                <input
+                  value={brandingForm.whatsappUrl || ""}
+                  onChange={(e) => setBrandingForm((prev) => ({ ...prev, whatsappUrl: e.target.value }))}
+                  placeholder="https://wa.me/628..."
+                  style={styles.input}
+                />
+              </label>
+              <label
+                style={{
+                  display: "grid",
+                  gap: "6px",
+                  color: "#334155",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  gridColumn: isMobile ? "auto" : "span 2"
+                }}
+              >
+                Upload Logo Lokal
+                <input
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={(e) => setBrandingLogoFile(e.target.files?.[0] || null)}
+                  style={{
+                    ...styles.input,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "8px 14px"
+                  }}
+                />
+                <span style={{ color: "#94a3b8", fontSize: "11.5px", fontWeight: 500 }}>
+                  Format didukung: PNG, JPG, JPEG, WEBP, dan SVG. Maksimum 5 MB.
+                </span>
+              </label>
+            </form>
 
             <div
               style={{
-                marginTop: "auto",
-                paddingTop: "12px",
-                borderTop: "1px dashed #cbd5e1",
-                color: "#64748b",
-                fontSize: "12px",
-                lineHeight: 1.5
+                borderRadius: "16px",
+                border: "1px solid #e2e8f0",
+                background: "linear-gradient(160deg, #f8fafc 0%, #eef2ff 100%)",
+                padding: "18px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px"
               }}
             >
-              Format didukung: PNG, JPG, JPEG, WEBP, dan SVG.
-            </div>
-          </aside>
-        </div>
+              <div
+                style={{
+                  fontSize: "10.5px",
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#64748b"
+                }}
+              >
+                Pratinjau Identitas
+              </div>
 
-        <div
-          style={{
-            marginTop: "20px",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "12px",
-            flexWrap: "wrap",
-            alignItems: "center"
-          }}
-        >
-          <button
-            type="submit"
-            form="branding-form"
-            disabled={saving}
+              <div
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  padding: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05)"
+                }}
+              >
+                <div
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
+                    background: previewLogoUrl ? "#ffffff" : "#eff6ff",
+                    border: previewLogoUrl ? "1px solid #e2e8f0" : "1px solid #dbeafe",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 800,
+                    fontSize: "16px",
+                    overflow: "hidden",
+                    flexShrink: 0
+                  }}
+                >
+                  {previewLogoUrl ? (
+                    <img
+                      src={previewLogoUrl}
+                      alt={previewBrandName}
+                      style={{ width: "44px", height: "44px", objectFit: "contain" }}
+                    />
+                  ) : (
+                    previewBrandName.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: "#0f172a", fontWeight: 700, fontSize: "15px", letterSpacing: "-0.01em" }}>
+                    {previewBrandName}
+                  </div>
+                  <div style={{ color: "#64748b", fontSize: "12px", marginTop: "2px" }}>
+                    Tampil di navbar, footer, & panel admin.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {[
+                  { label: "Instagram", url: brandingForm.instagramUrl, color: "#db2777", bg: "#fdf2f8" },
+                  { label: "TikTok", url: brandingForm.tiktokUrl, color: "#0f172a", bg: "#f1f5f9" },
+                  { label: "WhatsApp", url: brandingForm.whatsappUrl, color: "#15803d", bg: "#dcfce7" }
+                ].map((social) => (
+                  <span
+                    key={social.label}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 10px",
+                      borderRadius: "999px",
+                      background: social.url ? social.bg : "#f1f5f9",
+                      color: social.url ? social.color : "#94a3b8",
+                      fontSize: "11.5px",
+                      fontWeight: 600
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "999px",
+                        background: social.url ? social.color : "#cbd5e1"
+                      }}
+                    />
+                    {social.label} {social.url ? "aktif" : "kosong"}
+                  </span>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  marginTop: "auto",
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  background: "rgba(255, 255, 255, 0.7)",
+                  border: "1px dashed #cbd5e1",
+                  fontSize: "12px",
+                  color: "#475569",
+                  lineHeight: 1.5
+                }}
+              >
+                Pastikan logo memiliki latar transparan dan dimensi 1:1 untuk hasil terbaik di seluruh halaman.
+              </div>
+            </div>
+          </div>
+
+          <div
             style={{
-              border: "none",
-              borderRadius: "12px",
-              padding: "12px 22px",
-              fontWeight: 700,
-              cursor: saving ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              background: "linear-gradient(135deg, #1d4ed8, #2563eb)",
-              color: "#ffffff",
-              opacity: saving ? 0.7 : 1,
-              boxShadow: "0 14px 28px -16px rgba(29, 78, 216, 0.7)"
+              marginTop: "20px",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "12px",
+              flexWrap: "wrap",
+              alignItems: "center"
             }}
           >
-            {saving ? "Menyimpan..." : "Simpan Branding"}
-          </button>
-        </div>
+            <button
+              type="submit"
+              form="branding-form"
+              disabled={saving}
+              style={{
+                ...styles.button,
+                background: "linear-gradient(135deg, #2563eb, #4f46e5)",
+                color: "#ffffff",
+                opacity: saving ? 0.7 : 1,
+                boxShadow: "0 12px 28px -16px rgba(37, 99, 235, 0.6)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px"
+              }}
+            >
+              {saving ? (
+                "Menyimpan..."
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Simpan Branding
+                </>
+              )}
+            </button>
+          </div>
+        </article>
       </section>
     </div>
-  );
-}
-
-function PerformanceMeter({
-  label,
-  value,
-  total,
-  percent,
-  tone
-}: {
-  label: string;
-  value: number;
-  total: number;
-  percent: number;
-  tone: { bar: string; text: string };
-}) {
-  return (
-    <div style={{ display: "grid", gap: "8px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
-        <span style={{ color: "#0f172a", fontWeight: 600, fontSize: "13px" }}>{label}</span>
-        <span style={{ color: tone.text, fontWeight: 700, fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-          {value.toLocaleString("id-ID")}
-          <span style={{ color: "#94a3b8", fontWeight: 500, fontSize: "12px" }}>
-            {" "}
-            / {total.toLocaleString("id-ID")}
-          </span>
-        </span>
-      </div>
-      <div
-        style={{
-          width: "100%",
-          height: "8px",
-          background: "#f1f5f9",
-          borderRadius: "999px",
-          overflow: "hidden"
-        }}
-      >
-        <div
-          style={{
-            width: `${Math.min(percent, 100)}%`,
-            height: "100%",
-            background: tone.bar,
-            borderRadius: "999px",
-            transition: "width 0.3s ease"
-          }}
-        />
-      </div>
-      <div style={{ color: "#94a3b8", fontSize: "11px", fontWeight: 500 }}>
-        {percent}% dari total pengecekan
-      </div>
-    </div>
-  );
-}
-
-function QuickAction({
-  href,
-  label,
-  description,
-  icon
-}: {
-  href: string;
-  label: string;
-  description: string;
-  icon: ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        padding: "12px 14px",
-        borderRadius: "12px",
-        border: "1px solid #e2e8f0",
-        background: "#f8fafc",
-        textDecoration: "none",
-        color: "inherit",
-        transition: "background 0.15s, border-color 0.15s"
-      }}
-    >
-      <span
-        style={{
-          width: "32px",
-          height: "32px",
-          borderRadius: "10px",
-          background: "#ffffff",
-          color: "#1d4ed8",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          border: "1px solid #dbeafe"
-        }}
-      >
-        {icon}
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", color: "#0f172a", fontWeight: 600, fontSize: "13px" }}>{label}</span>
-        <span style={{ display: "block", color: "#64748b", fontSize: "11px", marginTop: "2px" }}>{description}</span>
-      </span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ color: "#94a3b8", flexShrink: 0 }}>
-        <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </Link>
-  );
-}
-
-function Field({ label, full, children }: { label: string; full?: boolean; children: ReactNode }) {
-  return (
-    <label
-      style={{
-        display: "grid",
-        gap: "8px",
-        color: "#334155",
-        fontWeight: 600,
-        fontSize: "12px",
-        textTransform: "uppercase",
-        letterSpacing: "0.06em",
-        gridColumn: full ? "1 / -1" : undefined
-      }}
-    >
-      {label}
-      <span style={{ display: "block", textTransform: "none", letterSpacing: 0 }}>{children}</span>
-    </label>
-  );
-}
-
-function SocialChip({
-  label,
-  url,
-  color
-}: {
-  label: string;
-  url?: string;
-  color: string;
-}) {
-  const filled = Boolean(url && url.trim().length > 0);
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "6px",
-        padding: "6px 10px",
-        borderRadius: "999px",
-        background: filled ? color : "#ffffff",
-        color: filled ? "#ffffff" : "#94a3b8",
-        border: filled ? "1px solid transparent" : "1px dashed #cbd5e1",
-        fontSize: "11px",
-        fontWeight: 600,
-        letterSpacing: "0.02em"
-      }}
-    >
-      <span
-        style={{
-          width: "6px",
-          height: "6px",
-          borderRadius: "50%",
-          background: filled ? "#ffffff" : "#cbd5e1"
-        }}
-      />
-      {label}
-      {filled ? null : <span style={{ marginLeft: "2px" }}>kosong</span>}
-    </span>
   );
 }
