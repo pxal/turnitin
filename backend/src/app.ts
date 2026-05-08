@@ -4,7 +4,6 @@ import fs from "node:fs";
 import path from "node:path";
 import multer from "multer";
 import adminRoutes from "./routes/admin.routes";
-import affiliateRoutes from "./routes/affiliate.routes";
 import authRoutes from "./routes/auth.routes";
 import brandingRoutes from "./routes/branding.routes";
 import checkRoutes from "./routes/check.routes";
@@ -83,6 +82,8 @@ function isCorsProtectedMethod(req: express.Request) {
 
 export function createApp() {
   const app = express();
+  app.set("trust proxy", 1);
+
   const allowedOrigins = buildAllowedOrigins(
     config.frontendBaseUrl,
     config.appBaseUrl,
@@ -150,7 +151,6 @@ export function createApp() {
   app.use("/uploads", express.static(path.resolve(config.uploadsDir)));
 
   app.use("/api/auth", authRoutes);
-  app.use("/api/affiliate", affiliateRoutes);
   app.use("/api/branding", brandingRoutes);
   app.use("/api/packages", packageRoutes);
   app.use("/api/checks", checkRoutes);

@@ -2,16 +2,15 @@ import fs from "node:fs/promises";
 import crypto from "node:crypto";
 import path from "node:path";
 import { config } from "../config";
+import { updateRootEnvFile } from "../lib/env-file";
 import { extractManagedFilename } from "../lib/uploads";
 
 type GatewaySettings = {
-  provider: "sekalipay" | "versan";
+  provider: "versan";
   baseUrl: string;
   apiKey: string;
   secretKey: string;
   merchantCode: string;
-  paymentCode: string;
-  useHmac: boolean;
   mockPayment: boolean;
 };
 
@@ -91,28 +90,12 @@ function decryptSecret(value: string) {
 }
 
 function defaultGatewaySettings(): GatewaySettings {
-  const configuredProvider = config.paymentGatewayProvider.toLowerCase() === "versan" ? "versan" : "sekalipay";
-  if (configuredProvider === "versan") {
-    return {
-      provider: "versan",
-      baseUrl: config.versanBaseUrl,
-      apiKey: config.versanApiKey,
-      secretKey: config.versanWebhookSecret,
-      merchantCode: config.versanStoreId,
-      paymentCode: "QRIS",
-      useHmac: false,
-      mockPayment: process.env.MOCK_PAYMENT === "true"
-    };
-  }
-
   return {
-    provider: "sekalipay",
-    baseUrl: config.sekalipayBaseUrl,
-    apiKey: config.sekalipayApiKey,
-    secretKey: config.sekalipaySecretKey,
-    merchantCode: config.sekalipayMerchantCode,
-    paymentCode: config.sekalipayPaymentCode,
-    useHmac: config.sekalipayUseHmac,
+    provider: "versan",
+    baseUrl: config.versanBaseUrl,
+    apiKey: config.versanApiKey,
+    secretKey: config.versanWebhookSecret,
+    merchantCode: config.versanStoreId,
     mockPayment: process.env.MOCK_PAYMENT === "true"
   };
 }
@@ -144,10 +127,14 @@ async function writeSettingsFile(data: RuntimeSettingsFile) {
 
 function defaultTelegramSettings(): TelegramNotificationSettings {
   return {
-    enabled: Boolean(config.telegramBotToken && config.telegramChatId),
+    enabled: config.telegramNotificationsEnabled
+      ? config.telegramNotificationsEnabled.toLowerCase() === "true"
+      : Boolean(config.telegramBotToken && config.telegramChatId),
     botToken: config.telegramBotToken,
     chatId: config.telegramChatId,
-    notifyPaidOrders: true
+    notifyPaidOrders: config.telegramNotifyPaidOrders
+      ? config.telegramNotifyPaidOrders.toLowerCase() === "true"
+      : true
   };
 }
 
@@ -207,17 +194,15 @@ export async function getGatewaySettings(): Promise<GatewaySettings> {
 }
 
 export async function saveGatewaySettings(
-  input: Partial<GatewaySettings> & Pick<GatewaySettings, "baseUrl" | "merchantCode" | "paymentCode" | "useHmac" | "mockPayment">
+  input: Partial<GatewaySettings> & Pick<GatewaySettings, "baseUrl" | "merchantCode" | "mockPayment">
 ): Promise<GatewaySettings> {
   const currentGateway = await getGatewaySettings();
   const normalized: GatewaySettings = {
-    provider: input.provider === "versan" ? "versan" : "sekalipay",
+    provider: "versan",
     baseUrl: input.baseUrl.trim(),
     apiKey: (input.apiKey || currentGateway.apiKey).trim(),
     secretKey: (input.secretKey || currentGateway.secretKey).trim(),
     merchantCode: input.merchantCode.trim(),
-    paymentCode: input.paymentCode.trim(),
-    useHmac: Boolean(input.useHmac),
     mockPayment: Boolean(input.mockPayment)
   };
 
@@ -229,6 +214,15 @@ export async function saveGatewaySettings(
       apiKey: encryptSecret(normalized.apiKey),
       secretKey: encryptSecret(normalized.secretKey)
     }
+  });
+
+  await updateRootEnvFile({
+    PAYMENT_GATEWAY_PROVIDER: normalized.provider,
+    VERSCAN_BASE_URL: normalized.baseUrl,
+    VERSCAN_API_KEY: normalized.apiKey,
+    VERSCAN_WEBHOOK_SECRET: normalized.secretKey,
+    VERSCAN_MERCHANT_ID: normalized.merchantCode,
+    MOCK_PAYMENT: String(normalized.mockPayment)
   });
 
   return normalized;
@@ -307,6 +301,13 @@ export async function saveTelegramNotificationSettings(
       ...normalized,
       botToken: encryptSecret(normalized.botToken)
     }
+  });
+
+  await updateRootEnvFile({
+    TELEGRAM_NOTIFICATIONS_ENABLED: String(normalized.enabled),
+    TELEGRAM_BOT_TOKEN: normalized.botToken,
+    TELEGRAM_CHAT_ID: normalized.chatId,
+    TELEGRAM_NOTIFY_PAID_ORDERS: String(normalized.notifyPaidOrders)
   });
 
   return normalized;

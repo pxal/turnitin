@@ -32,7 +32,6 @@ export const apiBaseUrl = resolveApiBaseUrl();
 
 export const userAuthStorageKey = "turnicheck:auth";
 export const adminAuthStorageKey = "turnicheck:admin-auth";
-export const affiliateAuthStorageKey = "turnicheck:affiliate-auth";
 export const historyVaultStorageKey = "turnicheck:history-vault";
 export const historyVaultTimeoutMs =
   Number(process.env.NEXT_PUBLIC_HISTORY_VAULT_TIMEOUT_MINUTES || 15) * 60 * 1000;
@@ -50,20 +49,6 @@ type StoredAdminSession = {
   admin: {
     id: string;
     email: string;
-  };
-};
-
-type StoredAffiliateSession = {
-  affiliate: {
-    id: string;
-    email: string;
-    username: string;
-    voucherCode: string;
-    voucherDiscountPercent: number;
-    commissionAmount: number;
-    bankName?: string | null;
-    bankAccountName?: string | null;
-    bankAccountNumber?: string | null;
   };
 };
 
@@ -101,10 +86,6 @@ export function getStoredAdminAuth() {
   return readStorageItem<StoredAdminSession>(adminAuthStorageKey);
 }
 
-export function getStoredAffiliateAuth() {
-  return readStorageItem<StoredAffiliateSession>(affiliateAuthStorageKey);
-}
-
 export function storeUserSession(user: StoredUserSession["user"]) {
   if (typeof window === "undefined") {
     return;
@@ -137,22 +118,6 @@ export function clearAdminSession() {
   window.localStorage.removeItem(adminAuthStorageKey);
 }
 
-export function storeAffiliateSession(affiliate: StoredAffiliateSession["affiliate"]) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(affiliateAuthStorageKey, JSON.stringify({ affiliate }));
-}
-
-export function clearAffiliateSession() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.removeItem(affiliateAuthStorageKey);
-}
-
 export function withCredentials(init: RequestInit = {}): RequestInit {
   return {
     ...init,
@@ -160,7 +125,7 @@ export function withCredentials(init: RequestInit = {}): RequestInit {
   };
 }
 
-export function withSessionRole(role: "user" | "admin" | "affiliate", init: RequestInit = {}): RequestInit {
+export function withSessionRole(role: "user" | "admin", init: RequestInit = {}): RequestInit {
   const headers = new Headers(init.headers || {});
   headers.set("x-session-role", role);
 

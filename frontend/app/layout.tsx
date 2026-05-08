@@ -15,12 +15,17 @@ export const metadata: Metadata = {
   applicationName: siteName,
   keywords: [
     "cek plagiarisme",
+    "cek plagiat",
     "cek turnitin",
+    "cek turnitin murah",
     "cek similarity",
     "cek plagiasi online",
+    "cek plagiarisme online",
     "turnitin indonesia",
+    "turnitin murah",
     "uji plagiarisme dokumen",
     "cek naskah skripsi",
+    "cek similarity skripsi",
     "verscan"
   ],
   alternates: {

@@ -154,18 +154,6 @@ const menuGroups: MenuGroup[] = [
     label: "Pertumbuhan",
     items: [
       {
-        label: "Affiliate",
-        href: "/admin/affiliates",
-        description: "Mitra & komisi",
-        icon: (active) => (
-          <SidebarIcon active={active}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM4 19a5 5 0 0 1 10 0H4Zm11 0a4 4 0 0 1 5-3.87V19h-5Z" fill="currentColor" />
-            </svg>
-          </SidebarIcon>
-        )
-      },
-      {
         label: "Gateway",
         href: "/admin/gateway",
         description: "Pembayaran",
@@ -391,8 +379,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 width: "42px",
                 height: "42px",
                 borderRadius: "12px",
-                background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
-                color: "#ffffff",
+                background: "#ffffff",
+                color: "#2563eb",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -400,14 +388,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 flexShrink: 0,
                 fontWeight: 800,
                 fontSize: "16px",
-                boxShadow: "0 8px 24px rgba(37, 99, 235, 0.4)"
+                boxShadow: "0 8px 24px rgba(15, 23, 42, 0.2)"
               }}
             >
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
                   alt={brandName}
-                  style={{ width: "42px", height: "42px", objectFit: "contain" }}
+                  style={{ width: "54px", height: "54px", objectFit: "contain", flexShrink: 0 }}
                 />
               ) : (
                 brandInitial
@@ -416,17 +404,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: "15px", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
                 {brandName}
-              </div>
-              <div
-                style={{
-                  fontSize: "10.5px",
-                  color: "#94a3b8",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em"
-                }}
-              >
-                Admin Console
               </div>
             </div>
             {isMobile ? (
@@ -455,52 +432,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             ) : null}
           </div>
 
-          <div style={{ padding: "14px 16px 8px" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 12px",
-                borderRadius: "12px",
-                background: "rgba(16, 185, 129, 0.08)",
-                border: "1px solid rgba(16, 185, 129, 0.18)"
-              }}
-            >
-              <span
-                aria-hidden
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "999px",
-                  background: "#10b981",
-                  boxShadow: "0 0 0 4px rgba(16, 185, 129, 0.18)",
-                  flexShrink: 0
-                }}
-              />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: "#a7f3d0" }}>Sistem aktif</div>
-                <div style={{ fontSize: "10.5px", color: "#86efac", fontWeight: 500 }}>Semua layanan online</div>
-              </div>
-            </div>
-          </div>
-
-          <nav style={{ padding: "6px 12px 12px", display: "flex", flexDirection: "column", gap: "18px", flex: 1 }}>
+          <nav style={{ padding: "14px 12px 12px", display: "flex", flexDirection: "column", gap: "18px", flex: 1 }}>
             {menuGroups.map((group) => (
               <div key={group.label} style={{ display: "grid", gap: "2px" }}>
-                <div style={{ padding: "0 12px 8px" }}>
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      color: "#64748b",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.16em"
-                    }}
-                  >
-                    {group.label}
-                  </span>
-                </div>
                 {group.items.map((item) => {
                   const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
                   return (
@@ -738,34 +672,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              {!isMobile ? (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "0 14px",
-                    height: "38px",
-                    borderRadius: "10px",
-                    border: "1px solid #e2e8f0",
-                    background: "#ffffff",
-                    color: "#64748b",
-                    fontSize: "12.5px",
-                    fontWeight: 600
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path
-                      d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  Cari pesanan, paket, atau pengguna…
-                </div>
-              ) : null}
-
               <button
                 type="button"
                 aria-label="Notifikasi"

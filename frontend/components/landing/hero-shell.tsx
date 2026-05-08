@@ -1,10 +1,4 @@
-"use client";
-
-import dynamic from "next/dynamic";
-
-const Hero = dynamic(() => import("./hero"), {
-  ssr: false
-});
+import Hero from "./hero";
 
 export default function HeroShell() {
   return <Hero />;

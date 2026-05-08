@@ -33,10 +33,20 @@ export default function Pricing() {
   return (
     <section className="section">
       <div className="container">
-        <div className="section-header fade-in">
-          <h2 className="section-title">Investasi Cerdas untuk Orisinalitas</h2>
+        <div className="section-header fade-in" style={{ textAlign: "center", marginBottom: "64px" }}>
+          <h2 className="section-title" style={{ fontSize: "2.5rem", fontWeight: 900 }}>Pricing</h2>
           <p className="section-subtitle">Pilih sesuai kapasitas naskah Anda. Tanpa langganan bulanan.</p>
-          <span className="section-title-underline"></span>
+          <span
+            className="section-title-underline"
+            style={{
+              display: "block",
+              width: "80px",
+              height: "4px",
+              background: "var(--primary)",
+              margin: "16px auto",
+              borderRadius: "2px"
+            }}
+          ></span>
         </div>
         <div className="pricing-flex">
           {packages.map((pkg, index) => {

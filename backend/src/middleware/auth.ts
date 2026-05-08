@@ -4,7 +4,7 @@ import { verifySignedToken } from "../lib/tokens";
 
 export type AuthenticatedUser = {
   id: string;
-  role: "user" | "admin" | "affiliate";
+  role: "user" | "admin";
   email?: string;
   name?: string;
 };
@@ -26,7 +26,7 @@ function readSessionRoleHint(req: Request): SessionRole | null {
   const rawHeader = req.headers["x-session-role"];
   const value = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
 
-  if (value === "user" || value === "admin" || value === "affiliate") {
+  if (value === "user" || value === "admin") {
     return value;
   }
 
@@ -35,8 +35,8 @@ function readSessionRoleHint(req: Request): SessionRole | null {
 
 function readSessionToken(req: Request, preferredRole?: SessionRole | null) {
   const orderedRoles: SessionRole[] = preferredRole
-    ? [preferredRole, ...(["user", "admin", "affiliate"] as SessionRole[]).filter((role) => role !== preferredRole)]
-    : ["user", "admin", "affiliate"];
+    ? [preferredRole, ...(["user", "admin"] as SessionRole[]).filter((role) => role !== preferredRole)]
+    : ["user", "admin"];
 
   for (const role of orderedRoles) {
     const token = readCookie(req, getSessionCookieName(role));
@@ -93,33 +93,6 @@ export function requireAdmin(req: AuthenticatedRequest, res: Response, next: Nex
   } catch (error) {
     return res.status(401).json({
       message: error instanceof Error ? error.message : "Token admin tidak valid."
-    });
-  }
-}
-
-export function requireAffiliate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const token = readBearerToken(req) || readCookie(req, getSessionCookieName("affiliate"));
-  if (!token) {
-    return res.status(401).json({ message: "Akses affiliate memerlukan sesi login affiliate." });
-  }
-
-  try {
-    const payload = verifySignedToken(token);
-    req.auth = {
-      id: payload.sub,
-      role: payload.role,
-      email: payload.email,
-      name: payload.name
-    };
-
-    if (req.auth.role !== "affiliate") {
-      return res.status(403).json({ message: "Hanya affiliate yang boleh mengakses endpoint ini." });
-    }
-
-    return next();
-  } catch (error) {
-    return res.status(401).json({
-      message: error instanceof Error ? error.message : "Token affiliate tidak valid."
     });
   }
 }

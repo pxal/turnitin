@@ -5,9 +5,9 @@ const rawSiteUrl =
 
 export const siteUrl = rawSiteUrl.replace(/\/+$/, "");
 export const siteName = "Verscan";
-export const defaultTitle = "Verscan | Cek Plagiarisme Dokumen Online";
+export const defaultTitle = "Verscan | Cek Plagiat dan Turnitin Murah Online";
 export const defaultDescription =
-  "Verscan membantu cek plagiarisme dokumen online dengan proses cepat, privat, dan mudah digunakan untuk mahasiswa, dosen, peneliti, dan profesional.";
+  "Verscan membantu cek plagiat, cek Turnitin murah, dan cek similarity dokumen online dengan proses cepat, privat, dan mudah untuk kebutuhan akademik.";
 export const defaultOgImage = `${siteUrl}/og-image.png`;
 
 export function buildCanonical(pathname = "/") {

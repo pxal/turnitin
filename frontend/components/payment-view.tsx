@@ -13,6 +13,7 @@ type LocalPaymentCache = {
     originalAmount: number;
     discountAmount: number;
     discountPercent: number | null;
+    uniquePaymentCode?: number;
     finalAmount: number;
     voucherCode: string | null;
   };
@@ -34,11 +35,12 @@ type DetailResponse = {
       originalAmount: number;
       discountAmount: number;
       discountPercent: number | null;
+      uniquePaymentCode?: number;
       finalAmount: number;
       voucherCode: string | null;
     };
     user: { id: string; whatsapp?: string | null; email: string; fullName: string };
-    payment: { provider: string; providerRef: string | null; amount: number; qrUrl: string | null; status: string; paidAt: string | null } | null;
+    payment: { provider: string; providerRef: string | null; amount: number; qrUrl: string | null; status: string; expiresAt: string | null; paidAt: string | null } | null;
   };
 };
 
@@ -72,7 +74,7 @@ export default function PaymentView({ checkRequestId }: { checkRequestId: string
         package: payload.data.package,
         pricing: payload.data.pricing,
         payment: {
-          provider: payload.data.payment?.provider || prev?.payment.provider || "sekalipay",
+          provider: payload.data.payment?.provider || prev?.payment.provider || "verscan",
           providerRef: payload.data.payment?.providerRef || prev?.payment.providerRef || "",
           qrUrl: payload.data.payment?.qrUrl || prev?.payment.qrUrl || null,
           paymentLink: prev?.payment.paymentLink || null,
@@ -80,7 +82,7 @@ export default function PaymentView({ checkRequestId }: { checkRequestId: string
           amount: payload.data.payment?.amount || payload.data.package.price,
           fee: prev?.payment.fee,
           total: prev?.payment.total,
-          expiredAt: prev?.payment.expiredAt || null,
+          expiredAt: payload.data.payment?.expiresAt || prev?.payment.expiredAt || null,
           status: payload.data.payment?.status || payload.data.paymentStatus
         }
       }));
@@ -170,11 +172,13 @@ export default function PaymentView({ checkRequestId }: { checkRequestId: string
   const paymentLink = cache.payment.paymentLink;
   const isPaid = paymentStatus === "PAID";
   const isFailed = paymentStatus === "FAILED";
+  const isExpired = paymentStatus === "EXPIRED";
   const total = cache.payment.total || cache.payment.amount;
   const pricing = cache.pricing || {
     originalAmount: cache.package.price,
     discountAmount: 0,
     discountPercent: null,
+    uniquePaymentCode: 0,
     finalAmount: cache.payment.amount,
     voucherCode: null
   };
@@ -230,7 +234,7 @@ export default function PaymentView({ checkRequestId }: { checkRequestId: string
             {/* QRIS Label + Countdown */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: "12px", marginBottom: "8px" }}>
               <div style={{ fontWeight: 800, fontSize: "18px", color: "var(--text-main)" }}>Bayar via QRIS</div>
-              {countdown !== null && !isPaid && (
+              {countdown !== null && !isPaid && !isExpired && (
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: countdown < 120 ? "rgba(239,68,68,0.08)" : "rgba(11,79,217,0.08)", border: `1px solid ${countdown < 120 ? "rgba(239,68,68,0.2)" : "rgba(11,79,217,0.2)"}`, borderRadius: "999px", padding: "5px 14px", fontSize: "13px", fontWeight: 700, color: countdown < 120 ? "#ef4444" : "var(--primary)" }}>
                   ⏱ {formatCountdown(countdown)}
                 </div>
@@ -279,7 +283,7 @@ export default function PaymentView({ checkRequestId }: { checkRequestId: string
                   ✅ Lihat Status Proses
                 </Link>
               )}
-              {!isPaid && !isFailed && (
+              {!isPaid && !isFailed && !isExpired && (
                 <button
                   onClick={() => void loadDetail()}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "14px 24px", borderRadius: "12px", background: "var(--bg-alt)", color: "var(--text-muted)", fontWeight: 700, fontSize: "15px", border: "1px solid var(--border)", cursor: "pointer" }}
@@ -290,7 +294,7 @@ export default function PaymentView({ checkRequestId }: { checkRequestId: string
             </div>
 
             {/* Polling indicator */}
-            {polling && !isPaid && (
+            {polling && !isPaid && !isExpired && (
               <div style={{ marginTop: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "13px", color: "var(--text-muted)" }}>
                 <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--primary)", animation: "pulse 1.5s ease-in-out infinite" }} />
                 Menunggu konfirmasi pembayaran secara otomatis...
@@ -316,6 +320,9 @@ export default function PaymentView({ checkRequestId }: { checkRequestId: string
                       }]
                     : []),
                   ...(cache.payment.fee ? [{ label: "Biaya Gateway", value: formatRupiah(cache.payment.fee) }] : []),
+                  ...(typeof pricing.uniquePaymentCode === "number"
+                    ? [{ label: "Kode Unik", value: formatRupiah(pricing.uniquePaymentCode) }]
+                    : []),
                   { label: "Total Bayar", value: formatRupiah(total), highlight: true },
                 ].map((item) => (
                   <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -327,10 +334,10 @@ export default function PaymentView({ checkRequestId }: { checkRequestId: string
                   <span style={{ fontSize: "14px", color: "var(--text-muted)" }}>Status</span>
                   <span style={{
                     padding: "4px 12px", borderRadius: "999px", fontSize: "13px", fontWeight: 800,
-                    background: isPaid ? "rgba(16,185,129,0.1)" : isFailed ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
-                    color: isPaid ? "#0b4fd9" : isFailed ? "#ef4444" : "#64748b"
+                    background: isPaid ? "rgba(16,185,129,0.1)" : isFailed || isExpired ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
+                    color: isPaid ? "#0b4fd9" : isFailed || isExpired ? "#ef4444" : "#64748b"
                   }}>
-                    {isPaid ? "✓ Lunas" : isFailed ? "✗ Gagal" : "⌛ Menunggu"}
+                    {isPaid ? "✓ Lunas" : isExpired ? "⌛ Expired" : isFailed ? "✗ Gagal" : "⌛ Menunggu"}
                   </span>
                 </div>
               </div>

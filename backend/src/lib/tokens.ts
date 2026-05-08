@@ -3,7 +3,7 @@ import { config } from "../config";
 
 type TokenPayload = {
   sub: string;
-  role: "user" | "admin" | "affiliate";
+  role: "user" | "admin";
   email?: string;
   name?: string;
   exp: number;

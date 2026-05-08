@@ -10,10 +10,11 @@ const allowedBrandingMimeTypes = new Set([
   "image/png",
   "image/jpeg",
   "image/jpg",
-  "image/webp"
+  "image/webp",
+  "image/svg+xml"
 ]);
 
-const allowedBrandingExtensions = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+const allowedBrandingExtensions = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg"]);
 
 export const uploadPdfInMemory = multer({
   storage: multer.diskStorage({
@@ -59,7 +60,7 @@ export const uploadBrandingImage = multer({
     const isAllowedExtension = allowedBrandingExtensions.has(extension);
 
     if (!isAllowedMimeType || !isAllowedExtension) {
-      callback(new Error("Logo harus berupa file PNG, JPG, JPEG, atau WEBP."));
+      callback(new Error("Logo harus berupa file PNG, JPG, JPEG, WEBP, atau SVG."));
       return;
     }
 

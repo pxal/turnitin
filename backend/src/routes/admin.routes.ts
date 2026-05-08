@@ -7,6 +7,7 @@ import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../middleware/auth";
 import { uploadBrandingImage } from "../middleware/upload";
 import { config } from "../config";
+import { resolveBrandingForRequest } from "../lib/branding-url";
 import { cleanupManagedUpload } from "../lib/uploads";
 import {
   getBrandingSettings,
@@ -17,14 +18,17 @@ import {
   saveGatewaySettings,
   saveTelegramNotificationSettings
 } from "../services/runtime-settings.service";
-import { cleanupInactiveAffiliateVouchers, normalizeVoucherCode } from "../services/voucher.service";
+import { normalizeVoucherCode } from "../services/voucher.service";
 import { hasUsableCheckerJob, startCheckIfReady } from "../services/check-lifecycle.service";
+import { expirePendingPayments } from "../services/payment-expiration.service";
 
 const router = Router();
 
 router.use(requireAdmin);
 
 router.get("/dashboard", async (req, res) => {
+  await expirePendingPayments();
+
   const parsedQuery = z
     .object({
       packagePage: z.coerce.number().int().min(1).optional(),
@@ -45,9 +49,7 @@ router.get("/dashboard", async (req, res) => {
   const packageSkip = (packagePage - 1) * packageLimit;
   const voucherSkip = (voucherPage - 1) * voucherLimit;
 
-  await cleanupInactiveAffiliateVouchers();
-
-  const [users, requests, completedCount, failedCount, recentRequests, totalEarnings, packages, vouchers, affiliates, totalPackages, totalVouchers] = await Promise.all([
+  const [users, requests, completedCount, failedCount, recentRequests, totalEarnings, packages, vouchers, totalPackages, totalVouchers] = await Promise.all([
     prisma.user.count(),
     prisma.checkRequest.count(),
     prisma.checkRequest.count({ where: { checkStatus: "COMPLETED" } }),
@@ -74,7 +76,6 @@ router.get("/dashboard", async (req, res) => {
       skip: voucherSkip,
       take: voucherLimit
     }),
-    prisma.affiliate.count(),
     prisma.package.count(),
     prisma.voucher.count()
   ]);
@@ -84,7 +85,6 @@ router.get("/dashboard", async (req, res) => {
     requests,
     completed: completedCount,
     failed: failedCount,
-    affiliates,
     recentRequests,
     totalEarnings: totalEarnings._sum.finalAmount || 0,
     packages,
@@ -100,124 +100,6 @@ router.get("/dashboard", async (req, res) => {
       limit: voucherLimit,
       totalItems: totalVouchers,
       totalPages: Math.max(1, Math.ceil(totalVouchers / voucherLimit))
-    }
-  });
-});
-
-router.get("/affiliates", async (req, res) => {
-  const parsedQuery = z
-    .object({
-      page: z.coerce.number().int().min(1).optional(),
-      limit: z.coerce.number().int().min(1).max(50).optional()
-    })
-    .safeParse(req.query);
-
-  if (!parsedQuery.success) {
-    return res.status(400).json({ message: "Parameter affiliate admin tidak valid." });
-  }
-
-  const page = parsedQuery.data.page || 1;
-  const limit = parsedQuery.data.limit || 10;
-  const skip = (page - 1) * limit;
-
-  const [affiliates, totalCount, totalVoucherUsages, totalAffiliateCommission] = await Promise.all([
-    prisma.affiliate.findMany({
-    orderBy: { createdAt: "desc" },
-    skip,
-    take: limit,
-    include: {
-      checkRequests: {
-        where: {
-          paymentStatus: "PAID"
-        },
-        select: {
-          id: true,
-          finalAmount: true,
-          affiliateCommissionAmount: true,
-          discountCode: true,
-          createdAt: true,
-          user: {
-            select: {
-              fullName: true,
-              email: true
-            }
-          }
-        }
-      },
-      withdrawals: {
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        select: {
-          id: true,
-          amount: true,
-          bankName: true,
-          bankAccountName: true,
-          bankAccountNumber: true,
-          status: true,
-          createdAt: true
-        }
-      }
-    }
-    }),
-    prisma.affiliate.count(),
-    prisma.checkRequest.count({
-      where: {
-        affiliateId: { not: null },
-        paymentStatus: "PAID"
-      }
-    }),
-    prisma.checkRequest.aggregate({
-      where: {
-        affiliateId: { not: null },
-        paymentStatus: "PAID"
-      },
-      _sum: {
-        affiliateCommissionAmount: true
-      }
-    })
-  ]);
-
-  return res.json({
-    success: true,
-    summary: {
-      totalAffiliates: totalCount,
-      totalVoucherUsages,
-      totalAffiliateCommission: totalAffiliateCommission._sum.affiliateCommissionAmount || 0
-    },
-    data: affiliates.map((affiliate) => {
-      const totalVoucherUsages = affiliate.checkRequests.length;
-      const totalCommission = affiliate.checkRequests.reduce(
-        (sum, item) => sum + item.affiliateCommissionAmount,
-        0
-      );
-      const totalRevenue = affiliate.checkRequests.reduce((sum, item) => sum + item.finalAmount, 0);
-
-      return {
-        id: affiliate.id,
-        email: affiliate.email,
-        username: affiliate.username,
-        voucherCode: affiliate.voucherCode,
-        voucherDiscountPercent: affiliate.voucherDiscountPercent,
-        commissionAmount: affiliate.commissionAmount,
-        isActive: affiliate.isActive,
-        bankName: affiliate.bankName,
-        bankAccountName: affiliate.bankAccountName,
-        bankAccountNumber: affiliate.bankAccountNumber,
-        createdAt: affiliate.createdAt,
-        stats: {
-          totalVoucherUsages,
-          totalCommission,
-          totalRevenue
-        },
-        recentOrders: affiliate.checkRequests.slice(0, 10),
-        withdrawals: affiliate.withdrawals
-      };
-    }),
-    pagination: {
-      page,
-      limit,
-      totalItems: totalCount,
-      totalPages: Math.max(1, Math.ceil(totalCount / limit))
     }
   });
 });
@@ -361,6 +243,8 @@ router.delete("/vouchers/:id", async (req, res) => {
 });
 
 router.get("/orders", async (req, res) => {
+  await expirePendingPayments();
+
   const parsedQuery = z
     .object({
       status: z.nativeEnum(CheckStatus).optional(),
@@ -497,23 +381,17 @@ router.get("/gateway", async (_req, res) => {
     apiKeyMasked: gateway.apiKey ? maskSecret(gateway.apiKey) : "",
     secretKeyMasked: gateway.secretKey ? maskSecret(gateway.secretKey) : "",
     merchantCode: gateway.merchantCode,
-    paymentCode: gateway.paymentCode,
-    useHmac: gateway.useHmac,
     mockPayment: gateway.mockPayment,
-    callbackUrlTemplate: `${config.appBaseUrl}/api/checks/:publicId/payment-callback`,
-    returnUrlTemplate: `${config.frontendBaseUrl}/processing/:publicId`
+    callbackUrlTemplate: `${config.appBaseUrl}/api/checks/:publicId/payment-callback`
   });
 });
 
 router.put("/gateway", async (req, res) => {
   const schema = z.object({
-    provider: z.enum(["sekalipay", "versan"]).default("sekalipay"),
     baseUrl: z.string().url(),
     apiKey: z.string().optional().default(""),
     secretKey: z.string().optional().default(""),
     merchantCode: z.string().default(""),
-    paymentCode: z.string().min(1),
-    useHmac: z.boolean(),
     mockPayment: z.boolean()
   });
 
@@ -536,8 +414,7 @@ router.put("/gateway", async (req, res) => {
       hasSecretKey: Boolean(saved.secretKey),
       apiKeyMasked: saved.apiKey ? maskSecret(saved.apiKey) : "",
       secretKeyMasked: saved.secretKey ? maskSecret(saved.secretKey) : "",
-      callbackUrlTemplate: `${config.appBaseUrl}/api/checks/:publicId/payment-callback`,
-      returnUrlTemplate: `${config.frontendBaseUrl}/processing/:publicId`
+      callbackUrlTemplate: `${config.appBaseUrl}/api/checks/:publicId/payment-callback`
     }
   });
 });
@@ -625,12 +502,12 @@ router.post("/notifications/test", async (_req, res) => {
   });
 });
 
-router.get("/branding", async (_req, res) => {
+router.get("/branding", async (req, res) => {
   const branding = await getBrandingSettings();
 
   return res.json({
     success: true,
-    data: branding
+    data: resolveBrandingForRequest(req, branding)
   });
 });
 
@@ -651,7 +528,7 @@ router.put("/branding", async (req, res) => {
   const branding = await saveBrandingSettings(parsed.data);
   return res.json({
     success: true,
-    data: branding
+    data: resolveBrandingForRequest(req, branding)
   });
 });
 
@@ -676,7 +553,7 @@ router.post("/branding/logo", uploadBrandingImage.single("logo"), async (req, re
 
   return res.json({
     success: true,
-    data: branding
+    data: resolveBrandingForRequest(req, branding)
   });
 });
 

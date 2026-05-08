@@ -1,8 +1,21 @@
 import dotenv from "dotenv";
+import fs from "node:fs";
 import path from "node:path";
 
+function resolveDotenvPath() {
+  const candidates = [
+    process.env.ENV_FILE_PATH,
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(process.cwd(), "../.env"),
+    path.resolve(__dirname, "../../../.env"),
+    path.resolve(__dirname, "../../.env")
+  ].filter((item): item is string => Boolean(item));
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
+}
+
 dotenv.config({
-  path: path.resolve(__dirname, "../../.env")
+  path: resolveDotenvPath()
 });
 
 function normalizeBaseUrl(value: string) {
@@ -43,10 +56,6 @@ export const config = {
   sessionSecret: requiredEnv("SESSION_SECRET"),
   adminEmail: process.env.ADMIN_EMAIL || "",
   adminPasswordHash: process.env.ADMIN_PASSWORD_HASH || "",
-  midtransServerKey: process.env.MIDTRANS_SERVER_KEY || "",
-  midtransClientKey: process.env.MIDTRANS_CLIENT_KEY || "",
-  midtransMerchantId: process.env.MIDTRANS_MERCHANT_ID || "",
-  paymentGatewayBaseUrl: process.env.PAYMENT_GATEWAY_BASE_URL || "",
   googleClientId: requiredEnv("GOOGLE_CLIENT_ID"),
   turnitinApiUrl: process.env.TURNITIN_API_URL || "",
   turnitinApiKey: process.env.TURNITIN_API_KEY || "",
@@ -55,19 +64,15 @@ export const config = {
   cekplagiatApiKey: process.env.CEKPLAGIAT_API_KEY || "",
   cekplagiatCostPerCheck: Number(process.env.CEKPLAGIAT_COST_PER_CHECK || 4600),
   checkFileAccessTokenTtlSeconds: Number(process.env.CHECK_FILE_ACCESS_TOKEN_TTL_SECONDS || 24 * 60 * 60),
-  sekalipayBaseUrl: process.env.SEKALIPAY_BASE_URL || "https://sekalipay.com/api/v1/gateway",
-  sekalipayApiKey: process.env.SEKALIPAY_API_KEY || "",
-  sekalipaySecretKey: process.env.SEKALIPAY_SECRET_KEY || "",
-  sekalipayMerchantCode: process.env.SEKALIPAY_MERCHANT_CODE || "",
-  sekalipayPaymentCode: process.env.SEKALIPAY_PAYMENT_CODE || "QRIS",
-  sekalipayUseHmac: process.env.SEKALIPAY_USE_HMAC === "true",
-  paymentGatewayProvider: process.env.PAYMENT_GATEWAY_PROVIDER || "",
-  versanBaseUrl: process.env.VERSAN_BASE_URL || "https://gateway.verscan.net",
-  versanApiKey: process.env.VERSAN_API_KEY || "",
-  versanWebhookSecret: process.env.VERSAN_WEBHOOK_SECRET || "",
-  versanStoreId: process.env.VERSAN_STORE_ID || "",
+  paymentGatewayProvider: process.env.PAYMENT_GATEWAY_PROVIDER || "versan",
+  versanBaseUrl: process.env.VERSCAN_BASE_URL || process.env.VERSAN_BASE_URL || "https://gateway.verscan.net",
+  versanApiKey: process.env.VERSCAN_API_KEY || process.env.VERSAN_API_KEY || "",
+  versanWebhookSecret: process.env.VERSCAN_WEBHOOK_SECRET || process.env.VERSAN_WEBHOOK_SECRET || "",
+  versanStoreId: process.env.VERSCAN_MERCHANT_ID || process.env.VERSAN_STORE_ID || "",
+  telegramNotificationsEnabled: process.env.TELEGRAM_NOTIFICATIONS_ENABLED || "",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
   telegramChatId: process.env.TELEGRAM_CHAT_ID || "",
+  telegramNotifyPaidOrders: process.env.TELEGRAM_NOTIFY_PAID_ORDERS || "",
   uploadsDir: process.env.UPLOADS_DIR || path.resolve(__dirname, "../uploads"),
   privateUploadsDir: process.env.PRIVATE_UPLOADS_DIR || path.resolve(__dirname, "../private-uploads"),
   publicUploadsBaseUrl,

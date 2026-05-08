@@ -135,6 +135,10 @@ function getPaymentTone(status: string) {
     return { background: "#dbeafe", color: "#1d4ed8", dot: "#3b82f6" };
   }
 
+  if (status === "EXPIRED") {
+    return { background: "#fee2e2", color: "#991b1b", dot: "#ef4444" };
+  }
+
   return { background: "#f1f5f9", color: "#475569", dot: "#94a3b8" };
 }
 
@@ -147,16 +151,6 @@ function formatWibDateTime(value: string) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(value));
-}
-
-function formatWibDateLong() {
-  return new Intl.DateTimeFormat("id-ID", {
-    timeZone: "Asia/Jakarta",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  }).format(new Date());
 }
 
 function getInitials(name: string) {
@@ -232,7 +226,6 @@ function deterministicSparkline(seed: number, length = 8) {
 export default function AdminDashboardPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const [serverTime, setServerTime] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -254,15 +247,6 @@ export default function AdminDashboardPage() {
       URL.revokeObjectURL(nextUrl);
     };
   }, [brandingLogoFile]);
-
-  useEffect(() => {
-    setServerTime(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-    const timer = window.setInterval(() => {
-      setServerTime(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, []);
 
   async function fetchDashboard() {
     try {
@@ -373,10 +357,11 @@ export default function AdminDashboardPage() {
         const status = item.paymentStatus.toUpperCase();
         if (status === "PAID") acc.paid += 1;
         else if (status === "PROCESSING") acc.processing += 1;
+        else if (status === "EXPIRED") acc.expired += 1;
         else acc.pending += 1;
         return acc;
       },
-      { paid: 0, processing: 0, pending: 0 }
+      { paid: 0, processing: 0, pending: 0, expired: 0 }
     );
     const totalRecent = data.recentRequests.length || 1;
 
@@ -552,31 +537,14 @@ export default function AdminDashboardPage() {
           />
         </svg>
       )
-    },
-    {
-      label: "Program Affiliate",
-      description: "Pantau mitra & komisi",
-      href: "/admin/affiliates",
-      color: "#f59e0b",
-      bg: "#fef3c7",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      )
     }
   ];
 
   const breakdownSegments = [
     { label: "Lunas", value: derived.paymentBreakdown.paid, color: "#22c55e" },
     { label: "Diproses", value: derived.paymentBreakdown.processing, color: "#f59e0b" },
-    { label: "Menunggu", value: derived.paymentBreakdown.pending, color: "#3b82f6" }
+    { label: "Menunggu", value: derived.paymentBreakdown.pending, color: "#3b82f6" },
+    { label: "Expired", value: derived.paymentBreakdown.expired, color: "#ef4444" }
   ];
 
   const previewBrandName = brandingForm.brandName || "Verscan";
@@ -584,223 +552,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div style={{ display: "grid", gap: "24px" }}>
-      {/* HERO */}
-      <section
-        style={{
-          position: "relative",
-          borderRadius: "22px",
-          overflow: "hidden",
-          color: "#f8fafc",
-          background:
-            "radial-gradient(circle at top right, rgba(96, 165, 250, 0.45), transparent 55%), radial-gradient(circle at 20% 80%, rgba(129, 140, 248, 0.35), transparent 50%), linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #1e3a8a 100%)",
-          padding: isMobile ? "26px 20px" : "32px 36px",
-          boxShadow: "0 20px 50px -32px rgba(15, 23, 42, 0.55)"
-        }}
-      >
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-            opacity: 0.5,
-            maskImage: "linear-gradient(135deg, rgba(0,0,0,0.6), transparent 60%)"
-          }}
-        />
-
-        <div
-          style={{
-            position: "relative",
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "1.4fr 1fr",
-            gap: isMobile ? "20px" : "32px",
-            alignItems: "center"
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "6px 12px",
-                borderRadius: "999px",
-                background: "rgba(255, 255, 255, 0.1)",
-                border: "1px solid rgba(255, 255, 255, 0.15)",
-                fontSize: "11.5px",
-                fontWeight: 600,
-                color: "#cbd5e1",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase"
-              }}
-            >
-              <span style={{ width: "6px", height: "6px", borderRadius: "999px", background: "#22c55e" }} />
-              Sistem berjalan normal
-            </div>
-            <h1
-              style={{
-                marginTop: "14px",
-                fontSize: isMobile ? "24px" : "30px",
-                fontWeight: 800,
-                color: "#ffffff",
-                lineHeight: 1.18,
-                letterSpacing: "-0.02em"
-              }}
-            >
-              Selamat datang kembali, Admin
-            </h1>
-            <p
-              style={{
-                marginTop: "10px",
-                color: "#cbd5e1",
-                fontSize: "14px",
-                maxWidth: "560px",
-                lineHeight: 1.6
-              }}
-            >
-              Pantau performa platform, kelola pesanan masuk, dan atur identitas brand dari satu dashboard yang ringkas.
-              Hari ini: <span style={{ color: "#f8fafc", fontWeight: 600 }}>{formatWibDateLong()}</span>.
-            </p>
-
-            <div
-              style={{
-                marginTop: "22px",
-                display: "grid",
-                gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, minmax(0, 1fr))",
-                gap: "12px",
-                maxWidth: "560px"
-              }}
-            >
-              {[
-                {
-                  label: "Pendapatan",
-                  value: formatRupiah(data.totalEarnings),
-                  hint: "Akumulasi"
-                },
-                {
-                  label: "Tingkat Sukses",
-                  value: `${derived.successRate}%`,
-                  hint: `${data.completed.toLocaleString("id-ID")} sukses`
-                },
-                {
-                  label: "Antrean",
-                  value: derived.inProgress.toLocaleString("id-ID"),
-                  hint: "Sedang diproses"
-                }
-              ].map((mini) => (
-                <div
-                  key={mini.label}
-                  style={{
-                    borderRadius: "14px",
-                    background: "rgba(255, 255, 255, 0.08)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    padding: "12px 14px",
-                    backdropFilter: "blur(6px)"
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "10.5px",
-                      color: "#cbd5e1",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em"
-                    }}
-                  >
-                    {mini.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: isMobile ? "16px" : "18px",
-                      color: "#ffffff",
-                      fontWeight: 800,
-                      marginTop: "6px",
-                      letterSpacing: "-0.01em",
-                      fontVariantNumeric: "tabular-nums"
-                    }}
-                  >
-                    {mini.value}
-                  </div>
-                  <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>{mini.hint}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              alignItems: isMobile ? "flex-start" : "flex-end"
-            }}
-          >
-            <div
-              style={{
-                padding: "16px 20px",
-                borderRadius: "16px",
-                background: "rgba(255, 255, 255, 0.08)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                minWidth: isMobile ? "100%" : "220px",
-                backdropFilter: "blur(8px)"
-              }}
-            >
-              <div
-                style={{
-                  color: "#cbd5e1",
-                  fontSize: "10.5px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em"
-                }}
-              >
-                Waktu Server WIB
-              </div>
-              <div
-                style={{
-                  color: "#ffffff",
-                  fontSize: "30px",
-                  fontWeight: 800,
-                  marginTop: "6px",
-                  fontVariantNumeric: "tabular-nums",
-                  letterSpacing: "-0.02em"
-                }}
-              >
-                {serverTime}
-              </div>
-              <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
-                Sinkron dengan zona Asia/Jakarta
-              </div>
-            </div>
-
-            <Link
-              href="/admin/orders"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                padding: "10px 18px",
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, #2563eb, #4f46e5)",
-                color: "#ffffff",
-                fontWeight: 600,
-                fontSize: "13px",
-                textDecoration: "none",
-                boxShadow: "0 12px 30px -12px rgba(37, 99, 235, 0.6)"
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Lihat semua pesanan
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {message ? (
         <div
           style={{

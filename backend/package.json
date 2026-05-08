@@ -6,7 +6,7 @@
     "predev": "dotenv -e ../.env -- prisma generate",
     "dev": "dotenv -e ../.env -- tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "dotenv -e ../.env -- node dist/server.js",
+    "start": "dotenv -e ../.env -- node dist/src/server.js",
     "prisma:generate": "dotenv -e ../.env -- prisma generate",
     "prisma:migrate": "dotenv -e ../.env -- prisma migrate dev",
     "postinstall": "dotenv -e ../.env -- prisma generate"

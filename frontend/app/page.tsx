@@ -1,26 +1,30 @@
 import HeroShell from "../components/landing/hero-shell";
 import Features from "../components/landing/features";
 import HowItWorks from "../components/landing/howitworks";
+import Pricing from "../components/landing/pricing";
+import SeoContent, { faqs } from "../components/landing/seo-content";
 import Testimonials from "../components/landing/testimonials";
 import type { Metadata } from "next";
 import { buildCanonical, defaultDescription, defaultOgImage, siteName } from "../lib/seo";
 
 export const metadata: Metadata = {
-  title: "Cek Plagiarisme Dokumen Online",
+  title: "Cek Plagiat dan Turnitin Murah Online",
   description:
-    "Cek plagiarisme dokumen online dengan proses cepat, privat, dan mudah. Cocok untuk skripsi, jurnal, artikel, dan dokumen akademik lainnya.",
+    "Cek plagiat, cek Turnitin murah, dan cek similarity dokumen online untuk skripsi, jurnal, artikel, proposal, dan tugas kuliah. Proses cepat dan privat.",
   alternates: {
     canonical: "/"
   },
   openGraph: {
-    title: `Cek Plagiarisme Dokumen Online | ${siteName}`,
-    description: defaultDescription,
+    title: `Cek Plagiat dan Turnitin Murah Online | ${siteName}`,
+    description:
+      "Cek plagiarisme dokumen online untuk skripsi, jurnal, artikel, proposal, dan tugas kuliah dengan laporan similarity yang jelas.",
     url: buildCanonical("/"),
     images: [defaultOgImage]
   },
   twitter: {
-    title: `Cek Plagiarisme Dokumen Online | ${siteName}`,
-    description: defaultDescription,
+    title: `Cek Plagiat dan Turnitin Murah Online | ${siteName}`,
+    description:
+      "Cek plagiat, cek Turnitin murah, dan cek similarity dokumen online dengan proses cepat dan privat.",
     images: [defaultOgImage]
   }
 };
@@ -61,17 +65,32 @@ export default function LandingPage() {
     url: buildCanonical("/")
   };
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer
+      }
+    }))
+  };
+
   return (
     <main>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify([organizationSchema, webSiteSchema, serviceSchema])
+          __html: JSON.stringify([organizationSchema, webSiteSchema, serviceSchema, faqSchema])
         }}
       />
       <HeroShell />
       <Features />
       <HowItWorks />
+      <Pricing />
+      <SeoContent />
       <Testimonials />
     </main>
   );

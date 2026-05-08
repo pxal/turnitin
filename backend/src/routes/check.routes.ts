@@ -13,10 +13,11 @@ import { uploadPdfInMemory } from "../middleware/upload";
 import {
   createPaymentQr,
   getGatewayPaymentStatus,
-  SekalipayPaymentStatusError,
-  verifySekalipaySignature,
-  verifyVersanSignature
+  PAYMENT_EXPIRY_SECONDS,
+  PaymentGatewayStatusError,
+  verifyVerscanSignature
 } from "../services/payment.service";
+import { expirePendingPayments } from "../services/payment-expiration.service";
 import { getGatewaySettings } from "../services/runtime-settings.service";
 import { resolvePackageByFileSize } from "../services/package.service";
 import { calculateDiscountPricing, findActiveVoucherByCode, normalizeVoucherCode } from "../services/voucher.service";
@@ -84,14 +85,43 @@ function buildPaymentCallbackUrl(checkRequestPublicId: string) {
   return `${config.appBaseUrl}/api/checks/${encodeURIComponent(checkRequestPublicId)}/payment-callback`;
 }
 
-function buildPaymentReturnUrl(checkRequestPublicId: string) {
-  return `${config.frontendBaseUrl}/processing/${encodeURIComponent(checkRequestPublicId)}`;
-}
-
 async function notifyPaidOrderSafely(checkRequestId: string) {
   await notifyPaidOrder(checkRequestId).catch((error) => {
     console.error("Failed to send Telegram paid-order notification:", error);
   });
+}
+
+async function generateUniquePaymentCode(baseAmount: number) {
+  await expirePendingPayments();
+
+  const pendingAmounts = await prisma.checkRequest.findMany({
+    where: {
+      paymentStatus: "PENDING",
+      finalAmount: {
+        gte: baseAmount,
+        lte: baseAmount + 300
+      }
+    },
+    select: {
+      finalAmount: true
+    }
+  });
+  const usedCodes = new Set(pendingAmounts.map((item) => item.finalAmount - baseAmount));
+
+  for (let attempt = 0; attempt < 301; attempt += 1) {
+    const code = Math.floor(Math.random() * 301);
+    if (!usedCodes.has(code)) {
+      return code;
+    }
+  }
+
+  for (let code = 0; code <= 300; code += 1) {
+    if (!usedCodes.has(code)) {
+      return code;
+    }
+  }
+
+  throw new Error("Kode unik pembayaran sedang penuh. Silakan coba lagi beberapa saat.");
 }
 
 router.get("/:id/source-file/:filename?", async (req, res) => {
@@ -161,8 +191,7 @@ router.post("/:id/payment-callback", async (req, res) => {
   }
 
   const rawBody = (req as RequestWithRawBody).rawBody || "";
-  const sekalipaySignature = req.headers["x-signature"];
-  const versanSignature = req.headers["x-gateway-signature"];
+  const verscanSignature = req.headers["x-gateway-signature"];
   const paymentPayload = z
     .object({
       merchant_ref_id: z.string().optional(),
@@ -180,24 +209,10 @@ router.post("/:id/payment-callback", async (req, res) => {
   }
 
   const gateway = await getGatewaySettings();
-  if (
-    gateway.provider === "versan" &&
-    gateway.secretKey &&
-    rawBody &&
-    versanSignature &&
-    !(await verifyVersanSignature(rawBody, versanSignature))
-  ) {
-    return res.status(401).json({ message: "Signature callback Versan Gateway tidak valid." });
-  }
-
-  if (
-    gateway.provider === "sekalipay" &&
-    gateway.secretKey &&
-    rawBody &&
-    sekalipaySignature &&
-    !(await verifySekalipaySignature(rawBody, sekalipaySignature))
-  ) {
-    return res.status(401).json({ message: "Signature callback Sekalipay tidak valid." });
+  if (gateway.secretKey) {
+    if (!rawBody || !verscanSignature || !(await verifyVerscanSignature(rawBody, verscanSignature))) {
+      return res.status(401).json({ message: "Signature callback Verscan Gateway tidak valid." });
+    }
   }
 
   const isPaid = paymentPayload.data.status.toLowerCase() === "paid";
@@ -238,6 +253,8 @@ router.post("/:id/payment-callback", async (req, res) => {
 router.use(requireAuth);
 
 router.get("/:id", async (req: AuthenticatedRequest, res) => {
+  await expirePendingPayments();
+
   let checkRequest;
   try {
     const lookup = requireSingleParam(req.params.id, "id");
@@ -299,6 +316,7 @@ router.get("/:id", async (req: AuthenticatedRequest, res) => {
         discountCode: checkRequest.discountCode,
         discountPercent: checkRequest.discountPercent,
         discountAmount: checkRequest.discountAmount,
+        uniquePaymentCode: checkRequest.uniquePaymentCode,
         finalAmount: checkRequest.finalAmount
       },
       user: {
@@ -314,6 +332,7 @@ router.get("/:id", async (req: AuthenticatedRequest, res) => {
             amount: payment.amount,
             qrUrl: payment.qrUrl,
             status: payment.status,
+            expiresAt: payment.expiresAt ? payment.expiresAt.toISOString() : null,
             paidAt: payment.paidAt ? payment.paidAt.toISOString() : null
           }
         : null
@@ -373,7 +392,8 @@ router.post("/upload", uploadPdfInMemory.single("file"), async (req: Authenticat
   }
 
   const pricing = calculateDiscountPricing(selectedPackage.price, voucher?.discountPercent);
-  const affiliateCommissionAmount = voucher?.affiliateId ? 1000 : 0;
+  const uniquePaymentCode = await generateUniquePaymentCode(pricing.finalAmount);
+  const finalAmountWithUniqueCode = pricing.finalAmount + uniquePaymentCode;
   let balance;
   try {
     balance = await getCekplagiatBalance();
@@ -407,13 +427,12 @@ router.post("/upload", uploadPdfInMemory.single("file"), async (req: Authenticat
       mimeType: file.mimetype,
       fileSizeBytes: file.size,
       sourceFileUrl: createManagedSourceReference(file.filename),
-      affiliateId: voucher?.affiliateId || null,
       originalAmount: pricing.originalAmount,
       discountCode: voucher ? normalizeVoucherCode(voucher.code) : null,
       discountPercent: pricing.discountPercent,
       discountAmount: pricing.discountAmount,
-      finalAmount: pricing.finalAmount,
-      affiliateCommissionAmount
+      uniquePaymentCode,
+      finalAmount: finalAmountWithUniqueCode
     }
   });
 
@@ -426,13 +445,12 @@ router.post("/upload", uploadPdfInMemory.single("file"), async (req: Authenticat
   let payment;
   try {
     payment = await createPaymentQr({
-      orderId: checkRequest.id,
-      amount: pricing.finalAmount,
+      orderId: checkRequest.publicId,
+      amount: finalAmountWithUniqueCode,
       customerPhone: user.whatsapp || "0000000000",
       customerName: user.fullName,
       customerEmail: user.email,
       callbackUrl: buildPaymentCallbackUrl(checkRequest.publicId),
-      returnUrl: buildPaymentReturnUrl(checkRequest.publicId),
       metadata: {
         packageName: selectedPackage.name,
         fileName: file.originalname,
@@ -440,8 +458,7 @@ router.post("/upload", uploadPdfInMemory.single("file"), async (req: Authenticat
         voucherCode: voucher?.code || null,
         discountPercent: pricing.discountPercent,
         discountAmount: pricing.discountAmount,
-        affiliateId: voucher?.affiliateId || null,
-        affiliateCommissionAmount
+        uniquePaymentCode
       }
     });
   } catch (paymentError) {
@@ -460,7 +477,8 @@ router.post("/upload", uploadPdfInMemory.single("file"), async (req: Authenticat
       provider: payment.provider,
       providerRef: payment.providerRef,
       amount: payment.amount,
-      qrUrl: payment.qrUrl
+      qrUrl: payment.qrUrl,
+      expiresAt: payment.expiredAt ? new Date(payment.expiredAt) : new Date(Date.now() + PAYMENT_EXPIRY_SECONDS * 1000)
     }
   });
 
@@ -470,6 +488,8 @@ router.post("/upload", uploadPdfInMemory.single("file"), async (req: Authenticat
     package: selectedPackage,
     pricing: {
       ...pricing,
+      uniquePaymentCode,
+      finalAmount: finalAmountWithUniqueCode,
       voucherCode: voucher?.code || null
     },
     payment
@@ -477,6 +497,8 @@ router.post("/upload", uploadPdfInMemory.single("file"), async (req: Authenticat
 });
 
 router.get("/:id/payment-status", async (req: AuthenticatedRequest, res) => {
+  await expirePendingPayments();
+
   let checkRequestId: string;
   try {
     const lookup = requireSingleParam(req.params.id, "id");
@@ -508,21 +530,35 @@ router.get("/:id/payment-status", async (req: AuthenticatedRequest, res) => {
   }
 
   const payment = checkRequest.payments[0];
-  const remoteRef = payment.providerRef || checkRequest.id;
+  if (payment.status === "EXPIRED" || checkRequest.paymentStatus === "EXPIRED") {
+    return res.json({
+      success: true,
+      source: payment.provider,
+      data: {
+        merchant_ref_id: checkRequest.publicId,
+        invoice: payment.providerRef || "",
+        amount: payment.amount,
+        status: "EXPIRED",
+        paid_at: payment.paidAt ? payment.paidAt.toISOString() : undefined
+      }
+    });
+  }
+
+  const remoteRef = payment.providerRef || checkRequest.publicId;
   let remote: Awaited<ReturnType<typeof getGatewayPaymentStatus>> | null = null;
 
   try {
     remote = await getGatewayPaymentStatus(remoteRef);
   } catch (error) {
     const isPaymentNotFound =
-      error instanceof SekalipayPaymentStatusError && error.code === "PAYMENT_NOT_FOUND";
+      error instanceof PaymentGatewayStatusError && error.code === "PAYMENT_NOT_FOUND";
 
-    if (!isPaymentNotFound && remoteRef !== checkRequest.id) {
+    if (!isPaymentNotFound && remoteRef !== checkRequest.publicId) {
       try {
-        remote = await getGatewayPaymentStatus(checkRequest.id);
+        remote = await getGatewayPaymentStatus(checkRequest.publicId);
       } catch (fallbackError) {
         const fallbackNotFound =
-          fallbackError instanceof SekalipayPaymentStatusError && fallbackError.code === "PAYMENT_NOT_FOUND";
+          fallbackError instanceof PaymentGatewayStatusError && fallbackError.code === "PAYMENT_NOT_FOUND";
 
         if (!fallbackNotFound) {
           throw fallbackError;
@@ -535,7 +571,7 @@ router.get("/:id/payment-status", async (req: AuthenticatedRequest, res) => {
         success: true,
         source: "local-fallback",
         data: {
-          merchant_ref_id: checkRequest.id,
+          merchant_ref_id: checkRequest.publicId,
           invoice: payment.providerRef || "",
           amount: payment.amount,
           status: payment.status,
@@ -549,8 +585,10 @@ router.get("/:id/payment-status", async (req: AuthenticatedRequest, res) => {
   const normalizedStatus =
     remote.status.toLowerCase() === "paid"
       ? "PAID"
-      : ["failed", "expired", "cancelled"].includes(remote.status.toLowerCase())
-        ? "FAILED"
+      : remote.status.toLowerCase() === "expired"
+        ? "EXPIRED"
+        : ["failed", "cancelled"].includes(remote.status.toLowerCase())
+          ? "FAILED"
         : "PENDING";
 
   await prisma.$transaction([
@@ -576,7 +614,7 @@ router.get("/:id/payment-status", async (req: AuthenticatedRequest, res) => {
       console.error("Failed to auto-start checker after payment polling:", error);
     });
     await notifyPaidOrderSafely(checkRequest.id);
-  } else if (normalizedStatus === "FAILED") {
+  } else if (normalizedStatus === "FAILED" || normalizedStatus === "EXPIRED") {
     await cleanupSourceFileForCheck(checkRequest.id).catch((error) => {
       console.error("Failed to cleanup file after failed payment polling:", error);
     });
@@ -903,6 +941,8 @@ router.post("/:id/simulate-completed", async (req: AuthenticatedRequest, res) =>
 });
 
 router.get("/user/:userId", async (req: AuthenticatedRequest, res) => {
+  await expirePendingPayments();
+
   let userId: string;
   try {
     userId = requireSingleParam(req.params.userId, "userId");

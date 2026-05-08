@@ -221,6 +221,26 @@ export default function HistoryPage() {
     return `${minutes}:${seconds}`;
   }
 
+  function UploadReturnButton() {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "28px" }}>
+        <Link
+          href="/upload"
+          className="button button-primary"
+          style={{
+            padding: isMobile ? "14px 22px" : "14px 28px",
+            fontSize: "14px",
+            fontWeight: 800,
+            width: isMobile ? "100%" : "auto",
+            maxWidth: isMobile ? "320px" : "none"
+          }}
+        >
+          Kembali ke Upload
+        </Link>
+      </div>
+    );
+  }
+
   function renderVaultPanel(options: {
     icon: string;
     title: string;
@@ -329,9 +349,11 @@ export default function HistoryPage() {
     <AuthGuard>
       <main style={{ minHeight: "100vh", padding: "100px 0 80px", background: "var(--bg-main)" }}>
         <div className="container">
-          <div style={{ maxWidth: "760px", marginBottom: isMobile ? "32px" : "44px" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(11,79,217,0.08)", color: "var(--primary)", border: "1px solid rgba(11,79,217,0.16)", borderRadius: "999px", padding: "8px 14px", fontSize: "12px", fontWeight: 800, letterSpacing: "0.6px", marginBottom: "18px" }}>
-              RIWAYAT TERLINDUNGI
+          <div style={{ maxWidth: "960px", marginBottom: isMobile ? "32px" : "44px" }}>
+            <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", gap: "12px", flexDirection: isMobile ? "column" : "row", marginBottom: "18px" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(11,79,217,0.08)", color: "var(--primary)", border: "1px solid rgba(11,79,217,0.16)", borderRadius: "999px", padding: "8px 14px", fontSize: "12px", fontWeight: 800, letterSpacing: "0.6px", alignSelf: isMobile ? "flex-start" : "center" }}>
+                RIWAYAT TERLINDUNGI
+              </div>
             </div>
             <h1 style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", fontWeight: 900, marginBottom: "10px", lineHeight: 1.1 }}>Brankas Riwayat</h1>
             <p style={{ color: "var(--text-muted)", fontSize: "17px", lineHeight: 1.7 }}>
@@ -367,20 +389,46 @@ export default function HistoryPage() {
           ) : loading ? (
             <div style={{ textAlign: "center", padding: "40px" }}>Memuat riwayat...</div>
           ) : history.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "80px 40px", background: "var(--surface)", borderRadius: "24px", border: "1px solid var(--border)" }}>
-              <div style={{ fontSize: "48px", marginBottom: "20px" }}>📭</div>
-              <h3 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Belum Ada Riwayat</h3>
-              <p style={{ color: "var(--text-muted)", marginBottom: "32px" }}>Anda belum pernah mengunggah dokumen untuk dicek.</p>
-              <Link href="/upload" className="button button-primary">Mulai Cek Sekarang</Link>
-            </div>
+            <>
+              <div style={{ textAlign: "center", padding: "80px 40px", background: "var(--surface)", borderRadius: "24px", border: "1px solid var(--border)" }}>
+                <div style={{ fontSize: "48px", marginBottom: "20px" }}>📭</div>
+                <h3 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Belum Ada Riwayat</h3>
+                <p style={{ color: "var(--text-muted)", marginBottom: "32px" }}>Anda belum pernah mengunggah dokumen untuk dicek.</p>
+                <Link href="/upload" className="button button-primary">Mulai Cek Sekarang</Link>
+              </div>
+              <UploadReturnButton />
+            </>
           ) : (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
-                {history.map((item) => (
+                {history.map((item) => {
+                  const isExpired = item.paymentStatus === "EXPIRED";
+                  const statusLabel = isExpired
+                    ? "Pembayaran Expired"
+                    : item.checkStatus === "WAITING_PAYMENT" ? "Menunggu Pembayaran" :
+                      item.checkStatus === "PAID" ? "Terbayar" :
+                      item.checkStatus === "PROCESSING" ? "Sedang Diproses" :
+                      item.checkStatus === "COMPLETED" ? "Selesai" : item.checkStatus;
+                  const statusTone = isExpired
+                    ? {
+                        background: "rgba(239, 68, 68, 0.12)",
+                        color: "#b91c1c"
+                      }
+                    : item.checkStatus === "COMPLETED"
+                      ? {
+                          background: "rgba(16, 185, 129, 0.1)",
+                          color: "#0b4fd9"
+                        }
+                      : {
+                          background: "rgba(245, 158, 11, 0.1)",
+                          color: "#64748b"
+                        };
+
+                  return (
                   <div key={item.id} style={{
                     background: "var(--surface)",
                     borderRadius: "20px",
-                    border: "1px solid var(--border)",
+                    border: isExpired ? "1px solid rgba(239, 68, 68, 0.28)" : "1px solid var(--border)",
                     padding: isMobile ? "18px" : "24px",
                     display: "flex",
                     alignItems: isMobile ? "stretch" : "center",
@@ -411,33 +459,51 @@ export default function HistoryPage() {
                           borderRadius: "99px",
                           fontSize: "12px",
                           fontWeight: 700,
-                          background: item.checkStatus === "COMPLETED" ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)",
-                          color: item.checkStatus === "COMPLETED" ? "#0b4fd9" : "#64748b"
+                          background: statusTone.background,
+                          color: statusTone.color
                         }}>
-                          {item.checkStatus === "WAITING_PAYMENT" ? "Menunggu Pembayaran" :
-                           item.checkStatus === "PAID" ? "Terbayar" :
-                           item.checkStatus === "PROCESSING" ? "Sedang Diproses" :
-                           item.checkStatus === "COMPLETED" ? "Selesai" : item.checkStatus}
+                          {statusLabel}
                         </span>
                       </div>
 
-                      <Link
-                        href={item.paymentStatus === "PAID" ? `/processing/${item.publicId}` : `/payment/${item.publicId}`}
-                        className="button"
-                        style={{
-                          padding: isMobile ? "12px 16px" : "10px 20px",
-                          fontSize: "14px",
-                          background: "var(--bg-alt)",
-                          border: "1px solid var(--border)",
-                          fontWeight: 700,
-                          width: isMobile ? "100%" : "auto"
-                        }}
-                      >
-                        Buka Kembali
-                      </Link>
+                      {isExpired ? (
+                        <button
+                          type="button"
+                          disabled
+                          className="button"
+                          style={{
+                            padding: isMobile ? "12px 16px" : "10px 20px",
+                            fontSize: "14px",
+                            background: "#f1f5f9",
+                            border: "1px solid #e2e8f0",
+                            color: "#94a3b8",
+                            fontWeight: 700,
+                            width: isMobile ? "100%" : "auto",
+                            cursor: "not-allowed"
+                          }}
+                        >
+                          Tidak Bisa Dibuka
+                        </button>
+                      ) : (
+                        <Link
+                          href={item.paymentStatus === "PAID" ? `/processing/${item.publicId}` : `/payment/${item.publicId}`}
+                          className="button"
+                          style={{
+                            padding: isMobile ? "12px 16px" : "10px 20px",
+                            fontSize: "14px",
+                            background: "var(--bg-alt)",
+                            border: "1px solid var(--border)",
+                            fontWeight: 700,
+                            width: isMobile ? "100%" : "auto"
+                          }}
+                        >
+                          Buka Kembali
+                        </Link>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               {totalPages > 1 && (
@@ -471,6 +537,7 @@ export default function HistoryPage() {
                   </button>
                 </div>
               )}
+              <UploadReturnButton />
             </>
           )}
         </div>

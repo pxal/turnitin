@@ -24,6 +24,7 @@ COPY backend/prisma ./backend/prisma
 RUN npm ci --omit=dev --ignore-scripts --workspace backend
 COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
 
 FROM node:20-bookworm-slim AS backend-runner
 WORKDIR /app
@@ -37,7 +38,7 @@ COPY --from=backend-prod-deps /app/backend/package.json ./backend/package.json
 COPY --from=build /app/backend/dist ./backend/dist
 COPY --from=build /app/backend/prisma ./backend/prisma
 RUN mkdir -p /app/backend/data /app/backend/uploads /app/backend/private-uploads
-CMD ["node", "backend/dist/src/server.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy --schema backend/prisma/schema.prisma && node backend/dist/src/server.js"]
 
 FROM node:20-bookworm-slim AS frontend-runner
 WORKDIR /app

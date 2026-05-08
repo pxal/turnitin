@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   description: "Upload dokumen PDF Anda dan dapatkan laporan plagiasi Turnitin secara instan.",
   alternates: {
     canonical: "/upload"
+  },
+  robots: {
+    index: false,
+    follow: false
   }
 };
 

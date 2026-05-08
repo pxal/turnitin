@@ -1,12 +1,11 @@
 import type { Request, Response } from "express";
 import { config } from "../config";
 
-export type SessionRole = "user" | "admin" | "affiliate";
+export type SessionRole = "user" | "admin";
 
 const SESSION_COOKIE_NAMES: Record<SessionRole, string> = {
   user: "turnicheck_user_session",
-  admin: "turnicheck_admin_session",
-  affiliate: "turnicheck_affiliate_session"
+  admin: "turnicheck_admin_session"
 };
 
 function isProduction() {
@@ -119,5 +118,4 @@ export function clearSessionCookie(res: Response, role?: SessionRole) {
 
   appendClearedCookie(res, "user");
   appendClearedCookie(res, "admin");
-  appendClearedCookie(res, "affiliate");
 }

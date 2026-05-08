@@ -1,0 +1,2 @@
+ALTER TABLE `CheckRequest` ADD COLUMN `uniquePaymentCode` INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE `Payment` ADD COLUMN `expiresAt` DATETIME(3) NULL;

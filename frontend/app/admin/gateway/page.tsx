@@ -12,7 +12,6 @@ import {
   AdminInput,
   AdminPageHeader,
   AdminSectionHeader,
-  StatusBadge,
   adminTokens
 } from "../../../components/admin/ui";
 
@@ -33,18 +32,14 @@ export default function AdminGatewayPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    provider: "sekalipay",
     baseUrl: "",
     apiKey: "",
     secretKey: "",
     merchantCode: "",
-    paymentCode: "QRIS",
-    useHmac: false,
     mockPayment: false
   });
   const [templates, setTemplates] = useState({
-    callbackUrlTemplate: "",
-    returnUrlTemplate: ""
+    callbackUrlTemplate: ""
   });
   const [meta, setMeta] = useState({
     hasApiKey: false,
@@ -53,7 +48,7 @@ export default function AdminGatewayPage() {
     secretKeyMasked: ""
   });
 
-  function normalizeTemplateUrl(value: string, target: "backend" | "frontend") {
+  function normalizeTemplateUrl(value: string) {
     if (!value) {
       return "";
     }
@@ -62,7 +57,7 @@ export default function AdminGatewayPage() {
       return value;
     }
 
-    const origin = target === "backend" ? apiBaseUrl || window.location.origin : window.location.origin;
+    const origin = apiBaseUrl || window.location.origin;
     return value.replace(/^https?:\/\/localhost:\d+/i, origin);
   }
 
@@ -81,13 +76,10 @@ export default function AdminGatewayPage() {
         }
 
         setForm({
-          provider: json.provider || "sekalipay",
           baseUrl: json.baseUrl || "",
           apiKey: "",
           secretKey: "",
           merchantCode: json.merchantCode || "",
-          paymentCode: json.paymentCode || "QRIS",
-          useHmac: Boolean(json.useHmac),
           mockPayment: Boolean(json.mockPayment)
         });
         setMeta({
@@ -97,8 +89,7 @@ export default function AdminGatewayPage() {
           secretKeyMasked: json.secretKeyMasked || ""
         });
         setTemplates({
-          callbackUrlTemplate: normalizeTemplateUrl(json.callbackUrlTemplate || "", "backend"),
-          returnUrlTemplate: normalizeTemplateUrl(json.returnUrlTemplate || "", "frontend")
+          callbackUrlTemplate: normalizeTemplateUrl(json.callbackUrlTemplate || "")
         });
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Gagal memuat gateway.");
@@ -110,7 +101,7 @@ export default function AdminGatewayPage() {
     void loadGateway();
   }, [router]);
 
-  const providerName = form.provider === "versan" ? "Versan Gateway" : "Sekalipay";
+  const providerName = "Verscan Gateway";
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -150,8 +141,7 @@ export default function AdminGatewayPage() {
         secretKey: ""
       }));
       setTemplates({
-        callbackUrlTemplate: normalizeTemplateUrl(json.data.callbackUrlTemplate || "", "backend"),
-        returnUrlTemplate: normalizeTemplateUrl(json.data.returnUrlTemplate || "", "frontend")
+        callbackUrlTemplate: normalizeTemplateUrl(json.data.callbackUrlTemplate || "")
       });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Gagal menyimpan gateway.");
@@ -168,16 +158,6 @@ export default function AdminGatewayPage() {
     );
   }
 
-  const credentialBadge = meta.hasApiKey && meta.hasSecretKey ? "success" : "warning";
-  const credentialLabel =
-    meta.hasApiKey && meta.hasSecretKey
-      ? "Kredensial lengkap"
-      : meta.hasApiKey
-        ? "Secret key kosong"
-        : meta.hasSecretKey
-          ? "API key kosong"
-          : "Belum ada kredensial";
-
   return (
     <div style={{ display: "grid", gap: "20px" }}>
       <AdminPageHeader
@@ -185,17 +165,6 @@ export default function AdminGatewayPage() {
         title="Payment Gateway"
         subtitle="Konfigurasi koneksi ke provider pembayaran beserta callback URL untuk integrasi otomatis."
         icon={GatewayIcon}
-        actions={
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <StatusBadge tone={credentialBadge}>{credentialLabel}</StatusBadge>
-            <StatusBadge tone={form.mockPayment ? "warning" : "brand"}>
-              {form.mockPayment ? "Mode testing aktif" : "Mode produksi"}
-            </StatusBadge>
-            <StatusBadge tone={form.useHmac ? "violet" : "neutral"}>
-              {form.useHmac ? "HMAC aktif" : "HMAC nonaktif"}
-            </StatusBadge>
-          </div>
-        }
       />
 
       {message ? <AdminAlert tone="success">{message}</AdminAlert> : null}
@@ -225,14 +194,14 @@ export default function AdminGatewayPage() {
               label="Base URL"
               value={form.baseUrl}
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
-              placeholder="https://api.sekalipay.com"
+              placeholder="http://localhost:1000"
               inputStyle={{ fontFamily: "monospace" }}
             />
             <AdminInput
-              label="Merchant Code"
+              label="Merchant ID"
               value={form.merchantCode}
               onChange={(e) => setForm((prev) => ({ ...prev, merchantCode: e.target.value }))}
-              placeholder="Merchant code dari provider"
+              placeholder="VER-XXXXX"
               inputStyle={{ fontFamily: "monospace" }}
             />
             <AdminInput
@@ -251,14 +220,7 @@ export default function AdminGatewayPage() {
               onChange={(e) => setForm((prev) => ({ ...prev, secretKey: e.target.value }))}
               placeholder={meta.hasSecretKey ? "Kosongkan jika tidak ingin mengganti" : "Masukkan secret key"}
               inputStyle={{ fontFamily: "monospace" }}
-              hint={meta.hasSecretKey ? `Tersimpan: ${meta.secretKeyMasked}` : "Belum ada secret key tersimpan."}
-            />
-            <AdminInput
-              label="Payment Code"
-              value={form.paymentCode}
-              onChange={(e) => setForm((prev) => ({ ...prev, paymentCode: e.target.value }))}
-              placeholder="QRIS"
-              hint="Kode metode pembayaran utama (QRIS, BCA, dll)."
+              hint={meta.hasSecretKey ? `Tersimpan: ${meta.secretKeyMasked}` : "Webhook secret untuk validasi callback."}
             />
           </div>
 
@@ -271,12 +233,6 @@ export default function AdminGatewayPage() {
             }}
           >
             <AdminCheckbox
-              label="Gunakan HMAC"
-              description="Aktifkan jika provider memerlukan signature HMAC pada setiap request."
-              checked={form.useHmac}
-              onChange={(next) => setForm((prev) => ({ ...prev, useHmac: next }))}
-            />
-            <AdminCheckbox
               label="Mock Payment (Testing)"
               description="Pembayaran disimulasikan tanpa request ke provider. Cocok untuk staging/QA."
               checked={form.mockPayment}
@@ -286,11 +242,11 @@ export default function AdminGatewayPage() {
         </AdminCard>
       </form>
 
-      {templates.callbackUrlTemplate || templates.returnUrlTemplate ? (
+      {templates.callbackUrlTemplate ? (
         <AdminCard padding={isMobile ? "20px" : "24px"}>
           <AdminSectionHeader
             title="URL Templates"
-            subtitle="Salin URL berikut ke dashboard provider untuk callback dan redirect setelah pembayaran."
+            subtitle="Salin URL berikut ke dashboard provider untuk callback pembayaran."
             icon={
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
@@ -303,9 +259,6 @@ export default function AdminGatewayPage() {
           <div style={{ display: "grid", gap: "10px" }}>
             {templates.callbackUrlTemplate ? (
               <UrlRow label="Callback URL" value={templates.callbackUrlTemplate} />
-            ) : null}
-            {templates.returnUrlTemplate ? (
-              <UrlRow label="Return URL" value={templates.returnUrlTemplate} />
             ) : null}
           </div>
         </AdminCard>

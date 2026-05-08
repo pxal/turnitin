@@ -518,7 +518,7 @@ export default function AdminPackagesPage() {
         <AdminCard padding={isMobile ? "16px" : "22px"}>
           <AdminSectionHeader
             title="Voucher Diskon"
-            subtitle="Kelola kode promo manual. Voucher affiliate yang nonaktif dibersihkan otomatis."
+            subtitle="Kelola kode promo manual untuk potongan harga."
             icon={VoucherIcon}
             actions={
               <AdminButton

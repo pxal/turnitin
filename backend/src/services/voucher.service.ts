@@ -4,17 +4,6 @@ export function normalizeVoucherCode(value: string) {
   return value.trim().toUpperCase();
 }
 
-export async function cleanupInactiveAffiliateVouchers() {
-  return prisma.voucher.deleteMany({
-    where: {
-      affiliateId: {
-        not: null
-      },
-      isActive: false
-    }
-  });
-}
-
 export async function findActiveVoucherByCode(code: string) {
   const normalizedCode = normalizeVoucherCode(code);
   if (!normalizedCode) {

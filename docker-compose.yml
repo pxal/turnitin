@@ -13,6 +13,7 @@ services:
     network_mode: host
     restart: unless-stopped
     volumes:
+      - ./.env:/app/.env
       - ./backend/data:/app/backend/data
       - ./backend/uploads:/app/backend/uploads
       - ./backend/private-uploads:/app/backend/private-uploads

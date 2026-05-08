@@ -9,7 +9,6 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const branding = useBranding();
   const isAdmin = pathname?.startsWith("/admin");
-  const isAffiliateDashboard = pathname?.startsWith("/affiliate/dashboard");
   const [mounted, setMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState("");
 
@@ -18,7 +17,7 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
     setCurrentYear(String(new Date().getFullYear()));
   }, []);
 
-  if (isAdmin || isAffiliateDashboard) {
+  if (isAdmin) {
     return <>{children}</>;
   }
 

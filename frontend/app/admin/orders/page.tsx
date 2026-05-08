@@ -73,7 +73,8 @@ type OrdersPayload = {
 const PAYMENT_TONE: Record<string, AdminTone> = {
   PAID: "success",
   PENDING: "warning",
-  FAILED: "danger"
+  FAILED: "danger",
+  EXPIRED: "danger"
 };
 
 const CHECK_TONE: Record<string, AdminTone> = {
@@ -90,6 +91,14 @@ function paymentTone(status: string): AdminTone {
 
 function checkTone(status: string): AdminTone {
   return CHECK_TONE[status] ?? "neutral";
+}
+
+function displayCheckStatus(order: Pick<OrderItem, "paymentStatus" | "checkStatus">) {
+  return order.paymentStatus === "EXPIRED" ? "CANCEL" : order.checkStatus;
+}
+
+function displayCheckTone(order: Pick<OrderItem, "paymentStatus" | "checkStatus">): AdminTone {
+  return order.paymentStatus === "EXPIRED" ? "danger" : checkTone(order.checkStatus);
 }
 
 const AVATAR_PALETTE: Array<[string, string]> = [
@@ -354,7 +363,7 @@ export default function AdminOrdersPage() {
                 <div style={{ fontSize: "11px", color: adminTokens.textMuted, fontWeight: 700, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   Status Cek
                 </div>
-                <StatusBadge tone={checkTone(selectedOrder.checkStatus)}>{selectedOrder.checkStatus}</StatusBadge>
+                <StatusBadge tone={displayCheckTone(selectedOrder)}>{displayCheckStatus(selectedOrder)}</StatusBadge>
               </div>
               <div
                 style={{
@@ -477,27 +486,28 @@ export default function AdminOrdersPage() {
         actions={
           <div
             style={{
-              display: "flex",
+              display: "grid",
               gap: "10px",
-              flexWrap: "wrap",
-              flexDirection: isMobile ? "column" : "row",
-              width: isMobile ? "100%" : "auto"
+              gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(2, minmax(180px, max-content))",
+              width: isMobile ? "100%" : "auto",
+              minWidth: 0
             }}
           >
             <AdminSelect
               value={filterPayment}
               onChange={(e) => setFilterPayment(e.target.value)}
-              containerStyle={{ minWidth: isMobile ? "auto" : "180px" }}
+              containerStyle={{ minWidth: 0, width: "100%" }}
             >
               <option value="">Semua Pembayaran</option>
               <option value="PAID">Lunas</option>
               <option value="PENDING">Pending</option>
               <option value="FAILED">Gagal</option>
+              <option value="EXPIRED">Expired</option>
             </AdminSelect>
             <AdminSelect
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              containerStyle={{ minWidth: isMobile ? "auto" : "180px" }}
+              containerStyle={{ minWidth: 0, width: "100%" }}
             >
               <option value="">Semua Status Cek</option>
               <option value="WAITING_PAYMENT">Menunggu Bayar</option>
@@ -663,8 +673,8 @@ export default function AdminOrdersPage() {
                     <StatusBadge tone={paymentTone(order.paymentStatus)} size="sm">
                       {order.paymentStatus}
                     </StatusBadge>
-                    <StatusBadge tone={checkTone(order.checkStatus)} size="sm">
-                      {order.checkStatus}
+                    <StatusBadge tone={displayCheckTone(order)} size="sm">
+                      {displayCheckStatus(order)}
                     </StatusBadge>
                   </div>
 
@@ -761,7 +771,7 @@ export default function AdminOrdersPage() {
                     <StatusBadge tone={paymentTone(order.paymentStatus)}>{order.paymentStatus}</StatusBadge>
                   </td>
                   <td style={adminTableStyles.td}>
-                    <StatusBadge tone={checkTone(order.checkStatus)}>{order.checkStatus}</StatusBadge>
+                    <StatusBadge tone={displayCheckTone(order)}>{displayCheckStatus(order)}</StatusBadge>
                   </td>
                   <td style={adminTableStyles.td}>
                     <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>

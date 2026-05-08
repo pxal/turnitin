@@ -6,13 +6,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/upload", "/affiliate"],
+        allow: ["/"],
         disallow: [
           "/admin/",
-          "/affiliate/dashboard",
-          "/affiliate/login",
-          "/affiliate/register",
           "/history",
+          "/upload",
           "/payment",
           "/payment/",
           "/processing",
